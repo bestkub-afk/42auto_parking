@@ -30,7 +30,10 @@ export default function Page() {
 
         <section className="detail-card">
           <VehicleCard vehicle={vehicle} />
-          <VehicleFacts vehicle={vehicle} endAt={endAt} />
+          <VehicleFacts 
+          vehicle={vehicle} 
+          endAt={endAt} 
+          fullDate/>
         </section>
 
         <div className="fee-total">
