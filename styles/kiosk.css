@@ -1,0 +1,212 @@
+.kiosk-shell {
+  min-height: 100dvh;
+  background: #f3f4f9;
+  color: #252840;
+  padding-bottom: 30px;
+}
+.kiosk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 4vw;
+  background: #483496;
+  color: white;
+}
+.kiosk-header > div {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+}
+.kiosk-header strong {
+  font-size: 27px;
+}
+.kiosk-header span {
+  font-size: 15px;
+  color: #dfd8f5;
+}
+.kiosk-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  padding: 22px 4vw;
+  font-size: 14px;
+  color: #78829a;
+}
+.kiosk-toolbar label {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 12px;
+}
+.kiosk-toolbar select {
+  padding: 10px;
+  max-width: 340px;
+  border: 1px solid #dddced;
+  border-radius: 8px;
+  background: white;
+}
+.kiosk-toolbar a {
+  color: var(--purple);
+  font-size: 12px;
+}
+.kiosk-panels {
+  display: grid;
+  grid-template-columns: 1.45fr 1fr;
+  gap: 28px;
+  margin: 0 4vw;
+}
+.kiosk-camera {
+  border: 1px solid #e0e1ed;
+  border-radius: 16px;
+  overflow: hidden;
+  background: white;
+  align-self: start;
+}
+.camera-label {
+  padding: 20px;
+  color: #76819a;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.camera-label i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1a9766;
+}
+.kiosk-camera > img {
+  width: 100%;
+  height: min(45vh, 470px);
+  object-fit: cover;
+  display: block;
+}
+.kiosk-plate {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: center;
+  padding: 25px;
+  color: var(--purple);
+}
+.kiosk-plate strong {
+  display: block;
+  font-size: 42px;
+  color: #252840;
+}
+.kiosk-plate span {
+  font-size: 15px;
+  color: #7d8399;
+}
+.kiosk-payment {
+  background: white;
+  border: 1px solid #e0e1ed;
+  border-radius: 16px;
+  padding: 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+.kiosk-payment h1 {
+  font-size: 27px;
+  margin-bottom: 18px;
+}
+.kiosk-payment .detail-list {
+  text-align: left;
+}
+.kiosk-amount {
+  font-size: 36px;
+  margin-top: 18px;
+}
+.kiosk-payment .demo-qr {
+  width: 150px;
+  height: 150px;
+}
+.kiosk-payment > .sp-button {
+  margin-top: 14px;
+}
+.kiosk-payment .section-description {
+  color: #8c879e;
+  font-size: 12px;
+}
+.kiosk-paid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  padding: 25px 0;
+  color: #16805c;
+}
+.kiosk-paid > span {
+  width: 64px;
+  height: 64px;
+  background: #e4f6ed;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.kiosk-paid strong {
+  font-size: 36px;
+  color: #252840;
+}
+.kiosk-paid small {
+  color: #9196aa;
+  font-size: 11px;
+}
+.kiosk-gate {
+  margin: 28px 4vw 0;
+  border: 1px solid #f1bac4;
+  border-radius: 12px;
+  padding: 23px 30px;
+  background: #fff0f2;
+  color: #b3334c;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.kiosk-gate strong {
+  font-size: 23px;
+}
+.kiosk-gate span {
+  margin-left: auto;
+  font-size: 14px;
+}
+.kiosk-gate.is-open {
+  background: #e5f6ed;
+  border-color: #b6e3cd;
+  color: #187850;
+}
+@media (max-width: 900px) {
+  .kiosk-header {
+    flex-wrap: wrap;
+  }
+  .kiosk-header > div {
+    flex-wrap: wrap;
+  }
+  .kiosk-header strong {
+    font-size: 23px;
+  }
+  .kiosk-panels {
+    grid-template-columns: 1fr;
+  }
+  .kiosk-camera > img {
+    height: 300px;
+  }
+  .kiosk-gate {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 20px;
+  }
+  .kiosk-gate span {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+  .kiosk-gate strong {
+    font-size: 20px;
+  }
+}

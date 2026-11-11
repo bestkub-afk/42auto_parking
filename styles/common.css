@@ -1,0 +1,238 @@
+.sp-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: center;
+}
+.sp-button--primary {
+  background: var(--purple);
+  color: #fff;
+}
+.sp-button--primary:hover {
+  background: #3c2c85;
+}
+.sp-button--blue {
+  background: var(--blue);
+  color: #fff;
+}
+.sp-button--blue:hover {
+  background: #1b369a;
+}
+.sp-button--secondary {
+  background: #f5f6fa;
+  color: #535e76;
+  border-color: var(--border);
+}
+.sp-button--danger {
+  background: #c53549;
+  color: #fff;
+}
+.sp-button--ghost {
+  background: transparent;
+  color: inherit;
+}
+.sp-button--ghost:hover {
+  background: #f0eef8;
+}
+.sp-button:disabled {
+  opacity: 0.45;
+}
+.sp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.sp-field > label {
+  font-size: 13px;
+  font-weight: 500;
+}
+.sp-input-wrap {
+  position: relative;
+  width: 100%;
+}
+.sp-input-wrap input,
+.sp-field select,
+.sp-field textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 13px;
+  border: 1px solid #dfe0e8;
+  background: #fff;
+  border-radius: 8px;
+  color: #252636;
+  font-size: 14px;
+}
+.sp-input-wrap input::placeholder {
+  color: #7c8191;
+  opacity: 1;
+}
+.sp-input-wrap input[aria-invalid='true'] {
+  border-color: #cf5365;
+}
+.sp-input-icon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--purple);
+  display: flex;
+}
+.sp-input-wrap.has-icon input {
+  padding-left: 43px;
+}
+.sp-card {
+  border: 1px solid #dad5ec;
+  border-radius: 12px;
+  background: white;
+}
+.form-error {
+  color: #b92d42;
+  background: #fff0f2;
+  padding: 9px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.form-hint {
+  color: #737c8f;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.success-notice {
+  color: #187547;
+  background: #ecfaf1;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+.sp-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 66px;
+  border-radius: 7px;
+  padding: 6px 12px;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+}
+.sp-badge--green {
+  background: #dcfce8;
+  color: #168451;
+}
+.sp-badge--blue {
+  background: #deebff;
+  color: #2868e7;
+}
+.sp-badge--red {
+  background: #fee3e5;
+  color: #c33d52;
+}
+.sp-badge--gray {
+  background: #edf0f4;
+  color: #677083;
+}
+.sp-modal {
+  color: #252636;
+  width: min(480px, calc(100% - 32px));
+  max-height: calc(100dvh - 40px);
+  border: 0;
+  padding: 0;
+  border-radius: 16px;
+  box-shadow: 0 20px 80px #11112640;
+}
+.sp-modal::backdrop {
+  background: #17162c80;
+}
+.sp-modal-inner {
+  padding: 25px;
+}
+.sp-modal-inner > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.sp-modal-inner h2 {
+  font-size: 19px;
+  font-weight: 600;
+}
+.sp-modal-inner > p {
+  font-size: 14px;
+  line-height: 1.8;
+}
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+}
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+.modal-form .modal-actions {
+  margin-top: 8px;
+}
+.icon-button {
+  min-height: 36px;
+  min-width: 36px;
+  padding: 8px;
+  border-radius: 7px;
+}
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+.checkbox-label input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--purple);
+}
+.storage-notice {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  background: #fff6dd;
+  color: #735b1b;
+  padding: 12px 16px;
+  font-size: 12px;
+}
+.storage-notice button {
+  border: 0;
+  background: none;
+  font-size: 19px;
+}
+
+/* พื้นหลังมืดของหน้าต่างป๊อปอัป */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: #17162c80;
+}
+.modal-backdrop .sp-modal {
+  background: #fff;
+  overflow: auto;
+}
+.modal-backdrop .bank-sheet {
+  inset: 0;
+  height: fit-content;
+}
