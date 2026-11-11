@@ -1,4 +1,4 @@
-# 42 Auto Parking (Next.js แบบ React_W09)
+# 42 Auto Parking
 
 Frontend Demo ระบบลานจอดรถ: หน้า User (มือถือ), Admin และจอทางออก Kiosk
 ข้อมูลทั้งหมดเป็นข้อมูลจำลอง เก็บใน localStorage ของเบราว์เซอร์
