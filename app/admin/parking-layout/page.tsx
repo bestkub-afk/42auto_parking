@@ -291,19 +291,6 @@ export default function Page() {
                 onChange={(event) => setForm({ ...form, name: event.target.value })}
               />
             </label>
-            <label className="sp-field">
-              ชั้น
-              <select
-                value={form.floor}
-                onChange={(event) => setForm({ ...form, floor: Number(event.target.value) })}
-              >
-                {data.floors.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
             <label className="checkbox-label">
               <input
                 type="checkbox"
