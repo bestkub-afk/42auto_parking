@@ -2,14 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Download } from "lucide-react";
 import { useGlobalData } from "@/utils/context";
 import { createReport, reportDates } from "@/utils/reports";
 import type { ReportPeriod } from "@/utils/reports";
 import { dateTime, money } from "@/utils/format";
 import { floorName } from "@/utils/parking";
 import { canDo } from "@/utils/login";
-import { downloadCsv } from "@/utils/csv";
 import { DonutChart, RevenueChart, TrafficChart } from "@/components/ReportCharts";
 
 type Tab = "Finance" | "Activity" | "Vehicle Types" | "Heat Map";
@@ -72,10 +70,10 @@ function ReportTable({
   );
 }
 
-// หน้ารายงาน 4 แท็บ: ตัวกรองมีผลเมื่อกด "แสดงรายงาน" (กราฟ ตาราง CSV ใช้ชุดเดียวกัน)
+// หน้ารายงาน 4 แท็บ: ตัวกรองมีผลเมื่อกด "แสดงรายงาน" (กราฟ ตาราง ใช้ชุดเดียวกัน)
 export default function Page() {
   const { data, now } = useGlobalData();
-  const can = (permission: "export-reports" | "parking-layout") => canDo(data, permission);
+  const can = (permission: "parking-layout") => canDo(data, permission);
   const [tab, setTab] = useState<Tab>("Finance");
   const [period, setPeriod] = useState<Period>("month");
   const [dates, setDates] = useState(() => reportDates("month", now)); // ค่าที่กำลังเลือก
@@ -164,17 +162,6 @@ export default function Page() {
     ],
   };
 
-  // ข้อมูลที่ส่งออกเป็น CSV ตามแท็บที่เปิดอยู่
-  const csvRows = {
-    Finance: [financeColumns, ...financeRows],
-    Activity: [activityColumns, ...activityRows],
-    "Vehicle Types": [vehicleColumns, ...vehicleRows],
-    "Heat Map": [
-      ["ชั้น", "ช่องจอด", "จำนวนครั้ง"],
-      ...heatSpots.map((spot) => [spot.floor, spot.name, spot.count]),
-    ],
-  };
-
   function handleChangePeriod(next: Period) {
     setPeriod(next);
     setError("");
@@ -198,11 +185,6 @@ export default function Page() {
     setSelectedSpotId("");
   }
 
-  function handleExportCsv() {
-    const tabName = tab.toLowerCase().replaceAll(" ", "-");
-    downloadCsv(`auto-parking-${tabName}-${appliedDates.start}-${appliedDates.end}.csv`, csvRows[tab]);
-  }
-
   return (
     <div className="reports-page">
       <header className="reports-heading">
@@ -210,11 +192,6 @@ export default function Page() {
           <h1>{TAB_TITLES[tab][0]}</h1>
           <p>{TAB_TITLES[tab][1]}</p>
         </div>
-        {can("export-reports") && (
-          <button className="sp-button sp-button--secondary" onClick={handleExportCsv}>
-            <Download size={16} /> ส่งออก CSV
-          </button>
-        )}
       </header>
 
       <div className="reports-tabs" role="group" aria-label="ประเภทรายงาน">

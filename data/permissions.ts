@@ -26,7 +26,7 @@ export const MENUS: { menu: Menu; label: string; actions: { key: Permission; lab
       { key: "export-operations", label: "ส่งออก CSV" },
     ],
   },
-  { menu: "reports", label: "Reports", actions: [{ key: "export-reports", label: "ส่งออก CSV" }] },
+  { menu: "reports", label: "Reports", actions: [] },
   {
     menu: "permissions",
     label: "Admin Perm",
@@ -49,7 +49,6 @@ export const DEFAULT_ADMIN_PERMISSIONS: Permission[] = [
   "approve-exit",
   "view-photos",
   "export-operations",
-  "export-reports",
 ];
 
 // สิทธิ์ที่ให้ Admin ไม่ได้
