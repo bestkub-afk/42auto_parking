@@ -89,21 +89,29 @@ export const SPOT_LABELS: Record<SpotStatus, string> = {
   closed: "ปิดบริการ",
 };
 
-export const spotStatus = (data: ParkingData, spot: Spot): SpotStatus => {
-  if (data.vehicles.some((vehicle) => !vehicle.exitAt && vehicle.spotId === spot.id)) return "occupied";
+// atTime (ไม่บังคับ): ถ้าไม่ส่งมา = ดูตอนนี้ (รถที่ยังไม่ออก) / ถ้าส่งมา = ดู ณ เวลานั้น
+export const spotStatus = (data: ParkingData, spot: Spot, atTime?: string): SpotStatus => {
+  const t = atTime === undefined ? undefined : Date.parse(atTime);
+  const parked = data.vehicles.some((vehicle) => {
+    if (vehicle.spotId !== spot.id) return false;
+    if (t === undefined) return !vehicle.exitAt;
+    // เข้าก่อนเวลานั้น และยังไม่ออก หรือออกหลังเวลานั้น
+    return Date.parse(vehicle.entryAt) <= t && (!vehicle.exitAt || Date.parse(vehicle.exitAt) > t);
+  });
+  if (parked) return "occupied";
   if (!data.floors.find((floor) => floor.id === spot.floor)?.active) return "closed";
   if (spot.blocked) return "blocked";
   return "available";
 };
 
-// นับช่องแต่ละสถานะ (ส่ง floorId = นับเฉพาะชั้นนั้น)
-export const countSpots = (data: ParkingData, floorId?: number) => {
+// นับช่องแต่ละสถานะ (ส่ง floorId = นับเฉพาะชั้นนั้น, ส่ง atTime = นับ ณ เวลานั้น)
+export const countSpots = (data: ParkingData, floorId?: number, atTime?: string) => {
   const count = { total: 0, available: 0, occupied: 0, blocked: 0, closed: 0 };
   data.spots
     .filter((spot) => floorId === undefined || spot.floor === floorId)
     .forEach((spot) => {
       count.total += 1;
-      count[spotStatus(data, spot)] += 1;
+      count[spotStatus(data, spot, atTime)] += 1;
     });
   return count;
 };

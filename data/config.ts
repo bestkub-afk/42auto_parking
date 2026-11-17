@@ -12,7 +12,7 @@ export const QR_MINUTES = 10; // อายุ QR
 
 export const TIME_ZONE = "Asia/Bangkok";
 // นาฬิกาเดโมเริ่มที่เวลานี้ แล้วเดินตามเวลาจริง
-export const DEMO_START = "2025-10-14T12:45:00+07:00";
+export const DEMO_START = "2025-10-26T12:45:00+07:00";
 
 export const VEHICLE_TYPES: VehicleType[] = ["Sedan", "SUV", "Pickup"];
 export const PAYMENT_METHODS: PaymentMethod[] = ["Thai QR", "บัตรเครดิต"];
