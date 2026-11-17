@@ -21,7 +21,6 @@ export type Permission =
   | "view-photos"
   | "edit-operations"
   | "export-operations"
-  | "export-reports"
   | "edit-users"
   | "edit-roles"
   | "reset";
