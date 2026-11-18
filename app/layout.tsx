@@ -9,7 +9,7 @@ import "@/styles/kiosk.css";
 
 import { Suspense, useEffect, useState } from "react";
 import type { ParkingData } from "@/data/types";
-import { DATA_KEY } from "@/data/config";
+import { DATA_KEY, HOURLY_RATE } from "@/data/config";
 import { createDemoData } from "@/data/mockData";
 import { demoNow } from "@/utils/parking";
 import { globalDataContext } from "@/utils/context";
@@ -18,7 +18,18 @@ import { globalDataContext } from "@/utils/context";
 const loadData = (): ParkingData => {
   try {
     const saved = JSON.parse(localStorage.getItem(DATA_KEY) ?? "null");
-    if (saved && Array.isArray(saved.vehicles)) return saved;
+    // ข้อมูลที่บันทึกไว้ก่อนมีหน้าปรับราคาจะยังไม่มี hourlyRate → ใส่ค่าเริ่มต้นให้
+    if (saved && Array.isArray(saved.vehicles)) {
+      // สิทธิ์เมนู operations เดิม → pricing
+      const adminPermissions = Array.isArray(saved.adminPermissions)
+        ? saved.adminPermissions.map((permission: string) => (permission === "operations" ? "pricing" : permission))
+        : saved.adminPermissions;
+      return {
+        ...saved,
+        adminPermissions,
+        hourlyRate: typeof saved.hourlyRate === "number" ? saved.hourlyRate : HOURLY_RATE,
+      };
+    }
   } catch {}
   return createDemoData();
 };

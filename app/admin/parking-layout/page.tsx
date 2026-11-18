@@ -225,28 +225,8 @@ export default function Page() {
                   <dt>ชั้น</dt>
                   <dd>{floorName(data, selected.floor)}</dd>
                 </div>
-                <div>
-                  <dt>ทะเบียนรถ</dt>
-                  <dd>{parkedCar ? `${parkedCar.plate} · ${parkedCar.province}` : "—"}</dd>
-                </div>
-                <div>
-                  <dt>เวลาเข้า</dt>
-                  <dd>{parkedCar ? time(parkedCar.entryAt) + " น." : "—"}</dd>
-                </div>
-                <div>
-                  <dt>ประเภทรถ</dt>
-                  <dd>{parkedCar?.type ?? "—"}</dd>
-                </div>
               </dl>
               <div className="spot-detail-actions">
-                {parkedCar && canDo(data, "operations") && (
-                  <Link
-                    className="sp-button sp-button--primary"
-                    href={`/admin/operations?vehicle=${parkedCar.id}`}
-                  >
-                    ดูข้อมูลรถ
-                  </Link>
-                )}
                 {canDo(data, "edit-spots") && (
                   <button
                     className="sp-button sp-button--secondary"

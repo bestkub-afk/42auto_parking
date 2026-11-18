@@ -16,15 +16,9 @@ export const MENUS: { menu: Menu; label: string; actions: { key: Permission; lab
     ],
   },
   {
-    menu: "operations",
-    label: "Operation",
-    actions: [
-      { key: "record-entry", label: "บันทึกรถเข้า" },
-      { key: "approve-exit", label: "อนุมัติออกเกินเวลา" },
-      { key: "view-photos", label: "ดูรูปเข้า–ออก" },
-      { key: "edit-operations", label: "แก้ไขรายการ" },
-      { key: "export-operations", label: "ส่งออก CSV" },
-    ],
+    menu: "pricing",
+    label: "Pricing",
+    actions: [{ key: "edit-rate", label: "ปรับอัตราค่าจอด" }],
   },
   { menu: "reports", label: "Reports", actions: [{ key: "export-reports", label: "ส่งออก CSV" }] },
   {
@@ -41,14 +35,10 @@ export const MENUS: { menu: Menu; label: string; actions: { key: Permission; lab
 export const DEFAULT_ADMIN_PERMISSIONS: Permission[] = [
   "dashboard",
   "parking-layout",
-  "operations",
+  "pricing",
   "reports",
   "add-spots",
   "edit-spots",
-  "record-entry",
-  "approve-exit",
-  "view-photos",
-  "export-operations",
   "export-reports",
 ];
 

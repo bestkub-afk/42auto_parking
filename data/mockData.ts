@@ -1,5 +1,5 @@
 import type { ParkingData, Payment, Spot, User, Vehicle } from "./types";
-import { DEFAULT_CAR_IMAGE, DEFAULT_PROVINCE, PAYMENT_METHODS, VEHICLE_TYPES } from "./config";
+import { DEFAULT_CAR_IMAGE, DEFAULT_PROVINCE, HOURLY_RATE, PAYMENT_METHODS, VEHICLE_TYPES } from "./config";
 import { DEFAULT_ADMIN_PERMISSIONS } from "./permissions";
 import { parkingFee } from "@/utils/parking";
 
@@ -131,6 +131,7 @@ export const createDemoData = (): ParkingData => {
     payments: createPayments(vehicles),
     users: [...USERS],
     adminPermissions: [...DEFAULT_ADMIN_PERMISSIONS],
+    hourlyRate: HOURLY_RATE,
     clockStartedAt: Date.now(),
   };
 };
