@@ -92,7 +92,7 @@ export default function Page() {
             <div className="user-result-grid">
               {results.map((vehicle) => (
                 <Link key={vehicle.id} href={`/user/vehicle/${vehicle.id}`} className="user-result-card">
-                  <img src={vehicle.image} alt={`รถ ${vehicle.plate} ${vehicle.province}`} />
+                  <img src={vehicle.image}  />
                   <strong>
                     {vehicle.plate} · {vehicle.province}
                   </strong>

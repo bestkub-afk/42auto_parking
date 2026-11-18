@@ -77,7 +77,7 @@ export default function Page() {
 
   return (
     <>
-      <UserHeader title="รายละเอียดรถ" backTo={`/user/vehicle/${vehicle.id}`} />
+      <UserHeader title="ชำระเงิน" backTo={`/user/vehicle/${vehicle.id}`} />
       <main className="user-page-content">
         <section className="qr-card">
           <p>ยอดที่ต้องชำระ</p>
@@ -87,7 +87,7 @@ export default function Page() {
           <div className={`qr-box ${expired ? "is-expired" : ""}`}>
             <small>QR code</small>
             <DemoQr id="payment-qr" />
-            <small>สแกน QR เพื่อชำระเงินผ่านแอปธนาคาร</small>
+            <small>สแกน QR เพื่อชำระเงินผ่านแอปธนาคาร</small>                                                                                                                                                    
             {!paid && (
               <p className="qr-timer" role="timer">
                 <Clock3 size={16} />
