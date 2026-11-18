@@ -98,7 +98,8 @@ const createVehicles = (spots: Spot[]) => {
         const outHour = inHour + 1 + ((dayIndex + month) % 4);
         vehicles.push({
           id: `h-${month}-${day}-${count}`,
-          plate: `ทด ${month}${day}${count}`,
+          // เลขทะเบียน 4 หลัก (1000–2347) ไม่ซ้ำกัน: คำนวณจากเดือน วัน และลำดับรถในวันนั้น
+          plate: `ทด ${1000 + (month * 31 + day) * 4 + count}`,
           province: DEFAULT_PROVINCE,
           type: VEHICLE_TYPES[(dayIndex + count) % VEHICLE_TYPES.length],
           spotId: spots[(day + dayIndex * 7 + count * 13) % spots.length].id,
