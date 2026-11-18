@@ -3,17 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import type { Vehicle } from "@/data/types";
-import { EXIT_MINUTES } from "@/data/config";
 import { useGlobalData } from "@/utils/context";
 import { createReport, reportDates } from "@/utils/reports";
 import type { ReportPeriod } from "@/utils/reports";
 import { dateKey, dateTime, money } from "@/utils/format";
 import { currentRate, findPayment, floorName, parkingDuration, parkingStatus, vehicleTotal } from "@/utils/parking";
-import { canDo, getCurrentUser } from "@/utils/login";
+import { canDo } from "@/utils/login";
 import { DonutChart, RevenueChart, TrafficChart } from "@/components/ReportCharts";
 import StatusBadge, { ParkingBadge } from "@/components/StatusBadge";
-import Modal from "@/components/Modal";
 
 type Tab = "Finance" | "Activity" | "Vehicle Types" | "Heat Map";
 type Period = ReportPeriod | "custom";
@@ -100,8 +97,8 @@ function ReportTable({
 
 // หน้ารายงาน 4 แท็บ: ตัวกรองมีผลเมื่อกด "แสดงรายงาน" (กราฟ ตาราง ใช้ชุดเดียวกัน)
 export default function Page() {
-  const { data, setData, now } = useGlobalData();
-  const can = (permission: "parking-layout" | "approve-exit") => canDo(data, permission);
+  const { data, now } = useGlobalData();
+  const canViewParkingLayout = canDo(data, "parking-layout");
   // มาจาก Kiosk / Parking Layout (?vehicle=) → เปิดแท็บ Activity ตั้งแต่วันที่รถคันนั้นเข้า
   const params = useSearchParams();
   const linked = data.vehicles.find((vehicle) => vehicle.id === params.get("vehicle"));
@@ -117,10 +114,6 @@ export default function Page() {
   const [appliedFloor, setAppliedFloor] = useState(floor);
   const [selectedSpotId, setSelectedSpotId] = useState("");
   const [error, setError] = useState("");
-  const [approving, setApproving] = useState<Vehicle | null>(null); // รถที่กำลังอนุมัติออก
-  const [reason, setReason] = useState("");
-  const [approveError, setApproveError] = useState("");
-  const [notice, setNotice] = useState("");
   const [selectedVehicleId, setSelectedVehicleId] = useState(linked?.id ?? ""); // รถที่เปิดดูรายละเอียด
   const [visitPage, setVisitPage] = useState(0); // หน้าของตารางรถเข้า–ออก (เริ่มที่ 0)
 
@@ -173,7 +166,7 @@ export default function Page() {
   });
   const selectedVisitRow = pageVisits.findIndex((vehicle) => vehicle.id === selectedVehicleId);
 
-  // รายละเอียดรถที่เลือก (ภาพเข้า–ออก ค่าจอด การชำระ ประวัติอนุมัติ)
+  // รายละเอียดรถที่เลือก (ภาพเข้า–ออก ค่าจอด และการชำระ)
   const selected = data.vehicles.find((vehicle) => vehicle.id === selectedVehicleId);
   const selectedPayment = findPayment(data, selected?.id);
   const selectedStatus = selected ? parkingStatus(selected, selectedPayment, now) : null;
@@ -259,28 +252,6 @@ export default function Page() {
     setSelectedVehicleId(vehicleId);
     // เลื่อนลงไปที่กล่องรายละเอียด
     setTimeout(() => document.getElementById("vehicle-detail")?.scrollIntoView({ behavior: "smooth" }), 0);
-  }
-
-  function openApprove(vehicle: Vehicle) {
-    setApproving(vehicle);
-    setReason("");
-    setApproveError("");
-  }
-
-  // อนุมัติรถที่จ่ายแล้วแต่เกินเวลาออก → ออกได้อีก 15 นาทีโดยไม่เก็บเงินเพิ่ม
-  function handleApprove(event: React.FormEvent) {
-    event.preventDefault();
-    if (!approving) return;
-    if (reason.trim().length < 5) return setApproveError("กรุณาระบุเหตุผลอย่างน้อย 5 ตัวอักษร");
-    const approval = { staffName: getCurrentUser(data)!.name, approvedAt: now, reason: reason.trim() };
-    setData({
-      ...data,
-      vehicles: data.vehicles.map((vehicle) =>
-        vehicle.id === approving.id ? { ...vehicle, approvals: [...vehicle.approvals, approval] } : vehicle,
-      ),
-    });
-    setNotice(`อนุมัติรถ ${approving.plate} ให้ออกได้อีก ${EXIT_MINUTES} นาที โดยไม่เก็บเงินเพิ่ม`);
-    setApproving(null);
   }
 
   return (
@@ -400,11 +371,6 @@ export default function Page() {
             rows={activityRows}
             empty="ยังไม่มีรถเข้า–ออกในช่วงเวลานี้"
           />
-          {notice && (
-            <p className="reports-notice" role="status">
-              {notice}
-            </p>
-          )}
           <ReportTable
             heading={`รายการรถเข้า–ออก (${report.visits.length} คัน)`}
             columns={visitColumns}
@@ -448,11 +414,6 @@ export default function Page() {
                     {selectedPayment ? "ชำระแล้ว" : "ยังไม่ชำระ"}
                   </StatusBadge>
                   <ParkingBadge status={selectedStatus} />
-                  {selectedStatus.code === "overdue" && can("approve-exit") && (
-                    <button type="button" className="sp-button sp-button--primary" onClick={() => openApprove(selected)}>
-                      อนุมัติออกเกินเวลา
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -484,16 +445,6 @@ export default function Page() {
                 {selectedPayment && ` · ชำระเมื่อ ${dateTime(selectedPayment.paidAt)}`}
               </p>
 
-              {selected.approvals.length > 0 && (
-                <div className="approval-history">
-                  <h3>ประวัติอนุมัติออกเกินเวลา</h3>
-                  {selected.approvals.map((approval) => (
-                    <p key={approval.approvedAt}>
-                      {dateTime(approval.approvedAt)} · {approval.staffName} · {approval.reason}
-                    </p>
-                  ))}
-                </div>
-              )}
             </section>
           )}
         </>
@@ -559,7 +510,7 @@ export default function Page() {
                 </div>
                 <p>จำนวนครั้งที่ใช้งาน</p>
                 <strong className="reports-spot-count">{selectedSpot.count} ครั้ง</strong>
-                {can("parking-layout") && (
+                {canViewParkingLayout && (
                   <Link href={`/admin/parking-layout?spot=${selectedSpot.id}`}>ดูตำแหน่งในผัง →</Link>
                 )}
               </>
@@ -569,34 +520,6 @@ export default function Page() {
           </section>
         </div>
       )}
-
-      {/* ป๊อปอัป: อนุมัติรถที่จ่ายแล้วแต่เกินเวลาออก */}
-      <Modal open={approving !== null} title="อนุมัติออกเกินเวลา" onClose={() => setApproving(null)}>
-        {approving && (
-          <form className="modal-form" onSubmit={handleApprove} noValidate>
-            <p>
-              อนุมัติรถ {approving.plate} ให้ออกได้อีก {EXIT_MINUTES} นาที โดยไม่เก็บเงินเพิ่ม
-            </p>
-            <label className="sp-field">
-              เหตุผล
-              <textarea rows={3} value={reason} onChange={(event) => setReason(event.target.value)} />
-            </label>
-            {approveError && (
-              <p className="form-error" role="alert">
-                {approveError}
-              </p>
-            )}
-            <div className="modal-actions">
-              <button type="button" className="sp-button sp-button--secondary" onClick={() => setApproving(null)}>
-                ยกเลิก
-              </button>
-              <button type="submit" className="sp-button sp-button--primary">
-                ยืนยันอนุมัติ
-              </button>
-            </div>
-          </form>
-        )}
-      </Modal>
     </div>
   );
 }

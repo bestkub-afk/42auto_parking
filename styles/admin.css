@@ -731,11 +731,6 @@
 .parking-legend {
   flex-wrap: wrap;
 }
-.approval-history {
-  margin-top: 20px;
-  font-size: 13px;
-  line-height: 1.8;
-}
 .parking-spot.is-selected {
   background: #5540ae;
   border-color: #5540ae;

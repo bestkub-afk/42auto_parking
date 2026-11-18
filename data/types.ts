@@ -17,7 +17,6 @@ export type Permission =
   | "delete-spots"
   | "manage-floors"
   | "edit-rate"
-  | "approve-exit"
   | "edit-users"
   | "edit-roles"
   | "reset";

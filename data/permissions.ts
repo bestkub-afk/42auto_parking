@@ -23,9 +23,7 @@ export const MENUS: { menu: Menu; label: string; actions: { key: Permission; lab
   {
     menu: "reports",
     label: "Reports",
-    actions: [
-      { key: "approve-exit", label: "อนุมัติออกเกินเวลา" },
-    ],
+    actions: [],
   },
   {
     menu: "permissions",
@@ -45,7 +43,6 @@ export const DEFAULT_ADMIN_PERMISSIONS: Permission[] = [
   "reports",
   "add-spots",
   "edit-spots",
-  "approve-exit",
 ];
 
 // สิทธิ์ที่ให้ Admin ไม่ได้
