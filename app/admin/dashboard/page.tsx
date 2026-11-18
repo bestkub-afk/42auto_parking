@@ -150,7 +150,7 @@ export default function Page() {
       <section className="admin-card latest-vehicles">
         <div className="card-heading">
           <h2>รายการรถล่าสุด</h2>
-          {canDo(data, "operations") && <Link href="/admin/operations">ดูรายการทั้งหมด →</Link>}
+          {canDo(data, "reports") && <Link href="/admin/reports?tab=Activity">ดูรายการทั้งหมด →</Link>}
         </div>
         <div className="admin-table-wrap">
           <table className="admin-table">

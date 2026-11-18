@@ -15,18 +15,7 @@ export const MENUS: { menu: Menu; label: string; actions: { key: Permission; lab
       { key: "manage-floors", label: "จัดการชั้น" },
     ],
   },
-  {
-    menu: "operations",
-    label: "Operation",
-    actions: [
-      { key: "record-entry", label: "บันทึกรถเข้า" },
-      { key: "approve-exit", label: "อนุมัติออกเกินเวลา" },
-      { key: "view-photos", label: "ดูรูปเข้า–ออก" },
-      { key: "edit-operations", label: "แก้ไขรายการ" },
-      { key: "export-operations", label: "ส่งออก CSV" },
-    ],
-  },
-  { menu: "reports", label: "Reports", actions: [] },
+  { menu: "reports", label: "Reports", actions: [{ key: "approve-exit", label: "อนุมัติออกเกินเวลา" }] },
   {
     menu: "permissions",
     label: "Admin Perm",
@@ -41,14 +30,10 @@ export const MENUS: { menu: Menu; label: string; actions: { key: Permission; lab
 export const DEFAULT_ADMIN_PERMISSIONS: Permission[] = [
   "dashboard",
   "parking-layout",
-  "operations",
   "reports",
   "add-spots",
   "edit-spots",
-  "record-entry",
   "approve-exit",
-  "view-photos",
-  "export-operations",
 ];
 
 // สิทธิ์ที่ให้ Admin ไม่ได้

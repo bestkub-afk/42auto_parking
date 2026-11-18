@@ -275,3 +275,13 @@
     margin-left: 0;
   }
 }
+
+/* ข้อความแจ้งเมื่ออนุมัติรถออกเกินเวลาแล้ว */
+.reports-notice {
+  background: #e8f5ef;
+  border: 1px solid #b9dfcb;
+  color: #17603f;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+}

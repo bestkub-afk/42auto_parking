@@ -7,7 +7,7 @@ export type PaymentMethod = "Thai QR" | "บัตรเครดิต";
 export type Role = "Super Admin" | "Admin";
 
 // เมนูของ Admin
-export type Menu = "dashboard" | "parking-layout" | "operations" | "reports" | "permissions";
+export type Menu = "dashboard" | "parking-layout" | "reports" | "permissions";
 
 // สิทธิ์ = เมนู + การกระทำในเมนู
 export type Permission =
@@ -16,11 +16,7 @@ export type Permission =
   | "edit-spots"
   | "delete-spots"
   | "manage-floors"
-  | "record-entry"
   | "approve-exit"
-  | "view-photos"
-  | "edit-operations"
-  | "export-operations"
   | "edit-users"
   | "edit-roles"
   | "reset";
