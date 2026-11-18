@@ -20,8 +20,14 @@ export const MENUS: { menu: Menu; label: string; actions: { key: Permission; lab
     label: "Pricing",
     actions: [{ key: "edit-rate", label: "ปรับอัตราค่าจอด" }],
   },
-  { menu: "reports", label: "Reports", actions: [{ key: "export-reports", label: "ส่งออก CSV" }] },
-  { menu: "reports", label: "Reports", actions: [{ key: "approve-exit", label: "อนุมัติออกเกินเวลา" }] },
+  {
+    menu: "reports",
+    label: "Reports",
+    actions: [
+      { key: "export-reports", label: "ส่งออก CSV" },
+      { key: "approve-exit", label: "อนุมัติออกเกินเวลา" },
+    ],
+  },
   {
     menu: "permissions",
     label: "Admin Perm",
@@ -41,9 +47,6 @@ export const DEFAULT_ADMIN_PERMISSIONS: Permission[] = [
   "add-spots",
   "edit-spots",
   "export-reports",
-  "reports",
-  "add-spots",
-  "edit-spots",
   "approve-exit",
 ];
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { CircleCheck, Clock3, ChevronRight } from "lucide-react";
 import { useGlobalData } from "@/utils/context";
-import { BANK_APPS, QR_MINUTES } from "@/data/config";
+import { BANK_APPS, HOURLY_RATE, QR_MINUTES } from "@/data/config";
 import { countdown, money } from "@/utils/format";
 import { findPayment, payVehicle, vehicleTotal } from "@/utils/parking";
 import { downloadBlob } from "@/utils/csv";
@@ -48,7 +48,9 @@ export default function Page() {
 
   const paid = payment !== undefined;
   const expired = !paid && secondsLeft === 0;
-  const amount = vehicleTotal(vehicle, payment, now);
+  // ใช้อัตราจากหน้า pricing ให้ตรงกับหน้า vehicle
+  const rate = data.hourlyRate ?? HOURLY_RATE;
+  const amount = vehicleTotal(vehicle, payment, now, rate);
 
   // กดแอปธนาคาร (เดโม) = จ่ายเงินสำเร็จ
   const handlePay = () => {
@@ -87,7 +89,7 @@ export default function Page() {
           <div className={`qr-box ${expired ? "is-expired" : ""}`}>
             <small>QR code</small>
             <DemoQr id="payment-qr" />
-            <small>สแกน QR เพื่อชำระเงินผ่านแอปธนาคาร</small>                                                                                                                                                    
+            <small>สแกน QR เพื่อชำระเงินผ่านแอปธนาคาร</small>
             {!paid && (
               <p className="qr-timer" role="timer">
                 <Clock3 size={16} />

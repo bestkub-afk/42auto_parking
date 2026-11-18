@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { useGlobalData } from "@/utils/context";
+import { HOURLY_RATE } from "@/data/config";
 import { money } from "@/utils/format";
 import { findPayment, vehicleTotal } from "@/utils/parking";
 import UserHeader from "@/components/UserHeader";
@@ -19,8 +20,14 @@ export default function Page() {
 
   if (!vehicle) return <VehicleNotFound />;
 
+  // อัตราค่าจอดที่ตั้งไว้ในหน้า pricing (ถ้าไม่มีใช้ค่าเริ่มต้น)
+  const rate = data.hourlyRate ?? HOURLY_RATE;
+
   // จ่ายแล้วใช้เวลาที่จ่าย ยังไม่จ่ายใช้เวลาปัจจุบัน
   const endAt = vehicle.exitAt ?? payment?.paidAt ?? now;
+
+  // จ่ายแล้วใช้ยอดที่ล็อก ยังไม่จ่ายคิดตามอัตราปัจจุบัน
+  const total = vehicleTotal(vehicle, payment, now, rate);
 
   return (
     <>
@@ -28,19 +35,15 @@ export default function Page() {
       <main className="user-page-content">
         <img className="detail-photo" src={vehicle.image} alt={`รถ ${vehicle.plate}`} />
 
-
-        {/* //แสดงรายละเอียดรถ + เวลาออก + ค่าจอด */}
+        {/* แสดงรายละเอียดรถ + เวลาออก */}
         <section className="detail-card">
           <VehicleCard vehicle={vehicle} />
-          <VehicleFacts 
-          vehicle={vehicle}  //แสดงรายละเอียดรถ
-          endAt={endAt} //ใช้เวลาที่จ่ายแล้วหรือเวลาปัจจุบัน
-          fullDate/> 
+          <VehicleFacts vehicle={vehicle} endAt={endAt} fullDate />
         </section>
 
         <div className="fee-total">
           <span>ค่าจอดรถ</span>
-          <strong>{money(vehicleTotal(vehicle, payment, now))}</strong>
+          <strong>{money(total)}</strong>
         </div>
 
         <Link
