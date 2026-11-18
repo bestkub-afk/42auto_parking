@@ -1,5 +1,5 @@
 import type { ParkingData } from "@/data/types";
-import { PAYMENT_METHODS, VEHICLE_TYPES } from "@/data/config";
+import { VEHICLE_TYPES } from "@/data/config";
 import { dateKey, time } from "./format";
 
 // รวมตัวเลขให้ Dashboard และ Reports (กราฟ ตาราง ใช้ชุดเดียวกัน)
@@ -100,24 +100,16 @@ export function createReport(data: ParkingData, dates: ReportDates) {
   const series = labels.map((label) => ({
     label,
     revenue: 0,
-    transactions: 0,
     entries: 0,
     exits: 0,
   }));
   for (const payment of payments) {
     series[barIndex(payment.paidAt)].revenue += payment.amount;
-    series[barIndex(payment.paidAt)].transactions += 1;
   }
   for (const vehicle of vehicles) series[barIndex(vehicle.entryAt)].entries += 1;
   for (const exitAt of exitTimes) series[barIndex(exitAt)].exits += 1;
 
   // 4) สรุปตามช่องทางชำระและประเภทรถ
-  const channels = PAYMENT_METHODS.map((method) => ({
-    name: method,
-    value: payments
-      .filter((payment) => payment.method === method)
-      .reduce((sum, payment) => sum + payment.amount, 0),
-  }));
   const types = VEHICLE_TYPES.map((type) => ({
     name: type,
     value: vehicles.filter((vehicle) => vehicle.type === type).length,
@@ -131,7 +123,6 @@ export function createReport(data: ParkingData, dates: ReportDates) {
 
   return {
     series,
-    channels,
     types,
     payments,
     spotUsage,

@@ -7,17 +7,6 @@
   padding: 0;
 }
 
-.reports-topbar {
-  display: flex;
-  justify-content: space-between;
-  background: white;
-  border-bottom: 1px solid var(--report-border);
-  margin-inline: -26px;
-  padding: 14px 26px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
 .reports-heading {
   display: flex;
   align-items: center;
@@ -284,4 +273,52 @@
   border-radius: 8px;
   padding: 10px 14px;
   font-size: 13px;
+}
+
+/* ตารางรถเข้า–ออก: กดแถวเพื่อดูรายละเอียด */
+.reports-table tr.is-clickable {
+  cursor: pointer;
+}
+.reports-table tr.is-clickable:hover td,
+.reports-table tr.is-clickable:focus-visible td {
+  background: #f5f3fc;
+}
+.reports-table tr.is-clickable:focus-visible {
+  outline: 2px solid var(--report-purple);
+  outline-offset: -2px;
+}
+.reports-table tr.is-selected td {
+  background: #ece8f8;
+}
+
+/* ตัวแบ่งหน้าใต้ตาราง */
+.reports-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 10px;
+  font-size: 13px;
+  color: #4d5569;
+}
+.reports-pagination span:first-child {
+  margin-right: auto;
+}
+.reports-pagination button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--report-border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--report-purple);
+  font-size: 16px;
+  cursor: pointer;
+}
+.reports-pagination button:disabled {
+  color: #b8bccb;
+  cursor: default;
+}
+/* ตารางที่มีตัวแบ่งหน้า แสดงครบ 10 แถวโดยไม่ต้องเลื่อน */
+.reports-card:has(.reports-pagination) .reports-table-scroll {
+  max-height: none;
 }

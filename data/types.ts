@@ -1,14 +1,13 @@
 // ชนิดข้อมูลของระบบลานจอด (ดูว่าข้อมูลแต่ละอย่างมีช่องอะไร)
 
 export type VehicleType = "Sedan" | "SUV" | "Pickup";
-export type PaymentMethod = "Thai QR" | "บัตรเครดิต";
+export type PaymentMethod = "Thai QR";
 
 // มี 2 บทบาท: Super Admin ทำได้ทุกอย่าง / Admin ทำได้ตามสิทธิ์ที่ตั้งให้
 export type Role = "Super Admin" | "Admin";
 
 // เมนูของ Admin
 export type Menu = "dashboard" | "parking-layout" | "pricing" | "reports" | "permissions";
-export type Menu = "dashboard" | "parking-layout" | "reports" | "permissions";
 
 // สิทธิ์ = เมนู + การกระทำในเมนู
 export type Permission =
@@ -18,7 +17,6 @@ export type Permission =
   | "delete-spots"
   | "manage-floors"
   | "edit-rate"
-  | "export-reports"
   | "approve-exit"
   | "edit-users"
   | "edit-roles"

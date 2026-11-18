@@ -5,10 +5,6 @@ import { TIME_ZONE } from "@/data/config";
 // 120 → "120 บาท"
 export const money = (amount: number) => amount.toLocaleString("th-TH") + " บาท";
 
-// 120 → "120.00 บาท"
-export const moneyExact = (amount: number) =>
-  amount.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " บาท";
-
 // "09:24"
 export const time = (value: string) =>
   new Intl.DateTimeFormat("th-TH", {

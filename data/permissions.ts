@@ -24,7 +24,6 @@ export const MENUS: { menu: Menu; label: string; actions: { key: Permission; lab
     menu: "reports",
     label: "Reports",
     actions: [
-      { key: "export-reports", label: "ส่งออก CSV" },
       { key: "approve-exit", label: "อนุมัติออกเกินเวลา" },
     ],
   },
@@ -46,7 +45,6 @@ export const DEFAULT_ADMIN_PERMISSIONS: Permission[] = [
   "reports",
   "add-spots",
   "edit-spots",
-  "export-reports",
   "approve-exit",
 ];
 

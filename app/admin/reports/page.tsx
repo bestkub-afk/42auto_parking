@@ -9,7 +9,7 @@ import { useGlobalData } from "@/utils/context";
 import { createReport, reportDates } from "@/utils/reports";
 import type { ReportPeriod } from "@/utils/reports";
 import { dateKey, dateTime, money } from "@/utils/format";
-import { findPayment, floorName, parkingDuration, parkingStatus, spotText, vehicleTotal } from "@/utils/parking";
+import { currentRate, findPayment, floorName, parkingDuration, parkingStatus, vehicleTotal } from "@/utils/parking";
 import { canDo, getCurrentUser } from "@/utils/login";
 import { DonutChart, RevenueChart, TrafficChart } from "@/components/ReportCharts";
 import StatusBadge, { ParkingBadge } from "@/components/StatusBadge";
@@ -28,18 +28,26 @@ const TAB_TITLES: Record<Tab, [string, string]> = {
 // สีของ Heat Map จากใช้น้อย (อ่อน) ไปใช้มาก (เข้ม)
 const HEAT_COLORS = ["#f2eef9", "#e2d8f4", "#c6b5e8", "#a58bd6", "#775aba", "#493290"];
 const FINANCE_ROWS_SHOWN = 10;
+const VISITS_PER_PAGE = 10; // ตารางรถเข้า–ออก: หน้าละ 10 คัน
 
 // ตารางในหน้า Reports
+// onRowClick (ไม่บังคับ) = กดแถวได้ · selectedRow = แถวที่เลือกอยู่ · footer = ส่วนท้ายตาราง เช่น ตัวแบ่งหน้า
 function ReportTable({
   heading,
   columns,
   rows,
   empty,
+  onRowClick,
+  selectedRow,
+  footer,
 }: {
   heading: string;
   columns: string[];
   rows: React.ReactNode[][];
   empty: string;
+  onRowClick?: (rowIndex: number) => void;
+  selectedRow?: number;
+  footer?: React.ReactNode;
 }) {
   return (
     <section className="reports-card">
@@ -57,7 +65,21 @@ function ReportTable({
           </thead>
           <tbody>
             {rows.map((row, rowIndex) => (
-              <tr key={rowIndex}>
+              <tr
+                key={rowIndex}
+                className={onRowClick ? (rowIndex === selectedRow ? "is-clickable is-selected" : "is-clickable") : undefined}
+                tabIndex={onRowClick ? 0 : undefined}
+                onClick={onRowClick && (() => onRowClick(rowIndex))}
+                onKeyDown={
+                  onRowClick &&
+                  ((event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onRowClick(rowIndex);
+                    }
+                  })
+                }
+              >
                 {row.map((value, columnIndex) => (
                   <td key={columnIndex}>{value}</td>
                 ))}
@@ -71,6 +93,7 @@ function ReportTable({
           </tbody>
         </table>
       </div>
+      {footer}
     </section>
   );
 }
@@ -99,6 +122,7 @@ export default function Page() {
   const [approveError, setApproveError] = useState("");
   const [notice, setNotice] = useState("");
   const [selectedVehicleId, setSelectedVehicleId] = useState(linked?.id ?? ""); // รถที่เปิดดูรายละเอียด
+  const [visitPage, setVisitPage] = useState(0); // หน้าของตารางรถเข้า–ออก (เริ่มที่ 0)
 
   const report = createReport(data, appliedDates);
 
@@ -129,22 +153,25 @@ export default function Page() {
     point.entries + point.exits,
   ]);
 
-  // ---------- Activity: รายการรถเข้า–ออกทีละคัน กด "ดู" เพื่อดูรายละเอียดรถ ----------
-  const visitColumns = ["ทะเบียนรถ", "ประเภท", "เวลาเข้า", "เวลาออก", "ระยะเวลา", "สถานะ", "รายละเอียด"];
-  const visitRows = report.visits.map((vehicle) => {
-    const status = parkingStatus(vehicle, findPayment(data, vehicle.id), now);
+  // ---------- Activity: รายการรถเข้า–ออกทีละคัน หน้าละ 10 คัน กดแถวเพื่อดูรายละเอียดรถ ----------
+  const rate = currentRate(data); // อัตราค่าจอดที่ตั้งไว้ในหน้า Pricing
+  const visitColumns = ["ทะเบียนรถ", "เวลาเข้า", "เวลาออก", "ระยะเวลา", "ค่าจอด", "สถานะ"];
+  const pageCount = Math.max(1, Math.ceil(report.visits.length / VISITS_PER_PAGE));
+  const page = Math.min(visitPage, pageCount - 1); // ช่วงวันที่เปลี่ยนจนหน้าน้อยลง → ไม่ให้เกินหน้าสุดท้าย
+  const firstVisit = page * VISITS_PER_PAGE;
+  const pageVisits = report.visits.slice(firstVisit, firstVisit + VISITS_PER_PAGE);
+  const visitRows = pageVisits.map((vehicle) => {
+    const payment = findPayment(data, vehicle.id);
     return [
       `${vehicle.plate} ${vehicle.province}`,
-      vehicle.type,
       dateTime(vehicle.entryAt),
-      vehicle.exitAt ? dateTime(vehicle.exitAt) : "ยังจอดอยู่",
+      vehicle.exitAt ? dateTime(vehicle.exitAt) : "—",
       parkingDuration(vehicle, now),
-      <ParkingBadge key="status" status={status} />,
-      <button key="detail" type="button" className="text-button" onClick={() => showDetail(vehicle.id)}>
-        ดู
-      </button>,
+      money(vehicleTotal(vehicle, payment, now, rate)),
+      <ParkingBadge key="status" status={parkingStatus(vehicle, payment, now)} />,
     ];
   });
+  const selectedVisitRow = pageVisits.findIndex((vehicle) => vehicle.id === selectedVehicleId);
 
   // รายละเอียดรถที่เลือก (ภาพเข้า–ออก ค่าจอด การชำระ ประวัติอนุมัติ)
   const selected = data.vehicles.find((vehicle) => vehicle.id === selectedVehicleId);
@@ -225,6 +252,7 @@ export default function Page() {
     setAppliedDates(dates);
     setAppliedFloor(floor);
     setSelectedSpotId("");
+    setVisitPage(0);
   }
 
   function showDetail(vehicleId: string) {
@@ -382,15 +410,39 @@ export default function Page() {
             columns={visitColumns}
             rows={visitRows}
             empty="ยังไม่มีรถเข้า–ออกในช่วงเวลานี้"
+            onRowClick={(rowIndex) => showDetail(pageVisits[rowIndex].id)}
+            selectedRow={selectedVisitRow}
+            footer={
+              report.visits.length > VISITS_PER_PAGE && (
+                <div className="reports-pagination">
+                  <span>
+                    แสดง {firstVisit + 1}–{firstVisit + pageVisits.length} จาก {report.visits.length} รายการ
+                  </span>
+                  <button type="button" aria-label="หน้าก่อน" disabled={page === 0} onClick={() => setVisitPage(page - 1)}>
+                    ‹
+                  </button>
+                  <span>
+                    หน้า {page + 1} / {pageCount}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label="หน้าถัดไป"
+                    disabled={page === pageCount - 1}
+                    onClick={() => setVisitPage(page + 1)}
+                  >
+                    ›
+                  </button>
+                </div>
+              )
+            }
           />
 
           {selected && selectedStatus && (
             <section className="reports-card operation-details" id="vehicle-detail">
               <div className="card-heading">
-                <h2>รายละเอียดรถ {selected.plate}</h2>
-                <span>
-                  {selected.province} · {spotText(data, selected)}
-                </span>
+                <h2>
+                  รายละเอียดรถ {selected.plate} {selected.province}
+                </h2>
                 <div className="heading-actions">
                   <StatusBadge tone={selectedPayment ? "green" : "red"}>
                     {selectedPayment ? "ชำระแล้ว" : "ยังไม่ชำระ"}
@@ -428,7 +480,7 @@ export default function Page() {
 
               <p className="section-description">
                 ระยะเวลาจอด {parkingDuration(selected, now)} · ค่าจอด{" "}
-                {money(vehicleTotal(selected, selectedPayment, now))}
+                {money(vehicleTotal(selected, selectedPayment, now, rate))}
                 {selectedPayment && ` · ชำระเมื่อ ${dateTime(selectedPayment.paidAt)}`}
               </p>
 

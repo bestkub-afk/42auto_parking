@@ -15,7 +15,7 @@ export const TIME_ZONE = "Asia/Bangkok";
 export const DEMO_START = "2025-10-26T12:45:00+07:00";
 
 export const VEHICLE_TYPES: VehicleType[] = ["Sedan", "SUV", "Pickup"];
-export const PAYMENT_METHODS: PaymentMethod[] = ["Thai QR", "บัตรเครดิต"];
+export const PAYMENT_METHODS: PaymentMethod[] = ["Thai QR"];
 export const DEFAULT_PROVINCE = "กรุงเทพมหานคร";
 export const DEFAULT_CAR_IMAGE = "/images/white-car.jpg";
 export const STAFF_CONTACT = "รปภ. ประจำไม้กั้นทางออก";
