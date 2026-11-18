@@ -103,14 +103,13 @@ export default function Page() {
   const report = createReport(data, appliedDates);
 
   // ---------- Finance ----------
-  const financeColumns = ["วัน–เวลาชำระ", "รหัสอ้างอิง", "ทะเบียนรถ", "วิธีชำระ", "ยอดชำระ (บาท)", "สถานะ"];
+  const financeColumns = ["วัน–เวลาชำระ", "รหัสอ้างอิง", "ทะเบียนรถ", "ยอดชำระ (บาท)", "สถานะ"];
   const financeRows = [...report.payments]
     .sort((a, b) => Date.parse(b.paidAt) - Date.parse(a.paidAt))
     .map((payment) => [
       dateTime(payment.paidAt),
       payment.id,
       data.vehicles.find((vehicle) => vehicle.id === payment.vehicleId)?.plate ?? "—",
-      payment.method,
       payment.amount,
       "สำเร็จ",
     ]);
