@@ -16,19 +16,27 @@ export const demoNow = (clockStartedAt: number) =>
 export const parkingMinutes = (entryAt: string, endAt: string) =>
   Math.max(0, Math.floor((Date.parse(endAt) - Date.parse(entryAt)) / MINUTE));
 
-// ชั่วโมง (ปัดขึ้น) × 30 บาท เช่น 3 ชม. 21 นาที → 4 ชม. → 120 บาท
-export const parkingFee = (entryAt: string, endAt: string) => {
+// อัตราที่ใช้อยู่ตอนนี้ (ตั้งได้ที่หน้า pricing เก็บใน data.hourlyRate) ถ้าไม่มีใช้ค่าเริ่มต้น
+export const currentRate = (data: ParkingData) => data.hourlyRate ?? HOURLY_RATE;
+
+// ชั่วโมง (ปัดขึ้น) × อัตราต่อชั่วโมง เช่น 3 ชม. 21 นาที → 4 ชม. → 4 × rate
+// ไม่ส่ง rate = ใช้ค่าเริ่มต้นใน config
+export const parkingFee = (entryAt: string, endAt: string, rate: number = HOURLY_RATE) => {
   const hours = Math.ceil(Math.max(0, Date.parse(endAt) - Date.parse(entryAt)) / HOUR);
-  return hours * HOURLY_RATE;
+  return hours * rate;
 };
 
 // ระยะเวลาจอด: ออกแล้วนับถึงเวลาออก ยังจอดนับถึงตอนนี้
 export const parkingDuration = (vehicle: Vehicle, now: string) =>
   durationText(parkingMinutes(vehicle.entryAt, vehicle.exitAt ?? now));
 
-// จ่ายแล้วใช้ยอดที่ล็อกไว้ ยังไม่จ่ายคำนวณถึงตอนนี้
-export const vehicleTotal = (vehicle: Vehicle, payment: Payment | undefined, now: string) =>
-  payment ? payment.amount : parkingFee(vehicle.entryAt, vehicle.exitAt ?? now);
+// จ่ายแล้วใช้ยอดที่ล็อกไว้ ยังไม่จ่ายคำนวณถึงตอนนี้ตามอัตราที่ส่งมา
+export const vehicleTotal = (
+  vehicle: Vehicle,
+  payment: Payment | undefined,
+  now: string,
+  rate: number = HOURLY_RATE,
+) => (payment ? payment.amount : parkingFee(vehicle.entryAt, vehicle.exitAt ?? now, rate));
 
 export const addExitMinutes = (start: string) =>
   new Date(Date.parse(start) + EXIT_MINUTES * MINUTE).toISOString();
@@ -130,7 +138,8 @@ export const payVehicle = (
   if (findPayment(data, vehicleId)) return data; // จ่ายแล้ว ไม่บันทึกซ้ำ
   if (vehicle.exitAt) throw new Error("รถออกจากลานแล้ว");
 
-  const amount = parkingFee(vehicle.entryAt, now);
+  // คิดด้วยอัตราที่ตั้งไว้ในหน้า pricing ให้ตรงกับยอดที่ผู้ใช้เห็น
+  const amount = parkingFee(vehicle.entryAt, now, currentRate(data));
   if (amount !== shownAmount) throw new Error("ยอดค่าจอดเปลี่ยนแล้ว กรุณายืนยันยอดใหม่อีกครั้ง");
 
   const payment: Payment = {
