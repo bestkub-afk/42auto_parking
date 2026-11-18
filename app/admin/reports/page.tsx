@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Download } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import type { Vehicle } from "@/data/types";
+import { EXIT_MINUTES } from "@/data/config";
 import { useGlobalData } from "@/utils/context";
 import { createReport, reportDates } from "@/utils/reports";
 import type { ReportPeriod } from "@/utils/reports";
-import { dateTime, money } from "@/utils/format";
-import { floorName } from "@/utils/parking";
-import { canDo } from "@/utils/login";
-import { downloadCsv } from "@/utils/csv";
+import { dateKey, dateTime, money } from "@/utils/format";
+import { findPayment, floorName, parkingDuration, parkingStatus, spotText } from "@/utils/parking";
+import { canDo, getCurrentUser } from "@/utils/login";
 import { DonutChart, RevenueChart, TrafficChart } from "@/components/ReportCharts";
+import { ParkingBadge } from "@/components/StatusBadge";
+import Modal from "@/components/Modal";
 
 type Tab = "Finance" | "Activity" | "Vehicle Types" | "Heat Map";
 type Period = ReportPeriod | "custom";
@@ -18,7 +21,7 @@ type Period = ReportPeriod | "custom";
 const TABS: Tab[] = ["Finance", "Activity", "Vehicle Types", "Heat Map"];
 const TAB_TITLES: Record<Tab, [string, string]> = {
   Finance: ["รายงานรายรับ", "ดูยอดรับชำระและรายการชำระเงินในช่วงที่เลือก"],
-  Activity: ["รายงานรถเข้า–ออก", "เปรียบเทียบจำนวนรถเข้า–ออกและดูช่วงเวลาที่หนาแน่น"],
+  Activity: ["รายงานรถเข้า–ออก", "เปรียบเทียบจำนวนรถเข้า–ออก ดูช่วงเวลาที่หนาแน่น และรายการรถทุกคัน"],
   "Vehicle Types": ["รายงานประเภทรถ", "ดูจำนวนและสัดส่วนของรถแต่ละประเภท"],
   "Heat Map": ["ความถี่การใช้ช่องจอด", "ดูว่าช่องจอดแต่ละช่องถูกใช้กี่ครั้งในช่วงที่เลือก"],
 };
@@ -35,7 +38,7 @@ function ReportTable({
 }: {
   heading: string;
   columns: string[];
-  rows: (string | number)[][];
+  rows: React.ReactNode[][];
   empty: string;
 }) {
   return (
@@ -72,18 +75,29 @@ function ReportTable({
   );
 }
 
-// หน้ารายงาน 4 แท็บ: ตัวกรองมีผลเมื่อกด "แสดงรายงาน" (กราฟ ตาราง CSV ใช้ชุดเดียวกัน)
+// หน้ารายงาน 4 แท็บ: ตัวกรองมีผลเมื่อกด "แสดงรายงาน" (กราฟ ตาราง ใช้ชุดเดียวกัน)
 export default function Page() {
-  const { data, now } = useGlobalData();
-  const can = (permission: "export-reports" | "parking-layout") => canDo(data, permission);
-  const [tab, setTab] = useState<Tab>("Finance");
-  const [period, setPeriod] = useState<Period>("month");
-  const [dates, setDates] = useState(() => reportDates("month", now)); // ค่าที่กำลังเลือก
+  const { data, setData, now } = useGlobalData();
+  const can = (permission: "parking-layout" | "approve-exit") => canDo(data, permission);
+  // มาจาก Kiosk / Parking Layout (?vehicle=) → เปิดแท็บ Activity ตั้งแต่วันที่รถคันนั้นเข้า
+  const params = useSearchParams();
+  const linked = data.vehicles.find((vehicle) => vehicle.id === params.get("vehicle"));
+  const [tab, setTab] = useState<Tab>(linked || params.get("tab") === "Activity" ? "Activity" : "Finance");
+  const [period, setPeriod] = useState<Period>(linked ? "custom" : "month");
+  const [dates, setDates] = useState(() => ({
+    ...(linked ? { start: dateKey(linked.entryAt), end: dateKey(now) } : reportDates("month", now)),
+    startTime: "00:00",
+    endTime: "23:59",
+  })); // ค่าที่กำลังเลือก
   const [appliedDates, setAppliedDates] = useState(dates); // ค่าที่กดแสดงรายงานแล้ว
   const [floor, setFloor] = useState(data.floors[0]?.id ?? 1);
   const [appliedFloor, setAppliedFloor] = useState(floor);
   const [selectedSpotId, setSelectedSpotId] = useState("");
   const [error, setError] = useState("");
+  const [approving, setApproving] = useState<Vehicle | null>(null); // รถที่กำลังอนุมัติออก
+  const [reason, setReason] = useState("");
+  const [approveError, setApproveError] = useState("");
+  const [notice, setNotice] = useState("");
 
   const report = createReport(data, appliedDates);
 
@@ -114,6 +128,28 @@ export default function Page() {
     point.exits,
     point.entries + point.exits,
   ]);
+
+    // ---------- Activity: รายการรถเข้า–ออกทีละคัน (รถที่เกินเวลามีปุ่มอนุมัติในช่องสถานะ) ----------
+  const visitColumns = ["ทะเบียนรถ", "ประเภท", "เวลาเข้า", "เวลาออก", "ระยะเวลา", "สถานะ"];
+  const visitRows = report.visits.map((vehicle) => {
+    const status = parkingStatus(vehicle, findPayment(data, vehicle.id), now);
+    return [
+      `${vehicle.plate} ${vehicle.province}`,
+      vehicle.type,
+      
+      dateTime(vehicle.entryAt),
+      vehicle.exitAt ? dateTime(vehicle.exitAt) : "ยังจอดอยู่",
+      parkingDuration(vehicle, now),
+      <span key="status">
+        <ParkingBadge status={status} />
+        {status.code === "overdue" && can("approve-exit") && (
+          <button type="button" className="text-button" onClick={() => openApprove(vehicle)}>
+            อนุมัติออก
+          </button>
+        )}
+      </span>,
+    ];
+  });
 
   // ---------- Vehicle Types ----------
   const vehicleColumns = ["ประเภทรถ", "จำนวน (คัน)", "สัดส่วน"];
@@ -164,21 +200,10 @@ export default function Page() {
     ],
   };
 
-  // ข้อมูลที่ส่งออกเป็น CSV ตามแท็บที่เปิดอยู่
-  const csvRows = {
-    Finance: [financeColumns, ...financeRows],
-    Activity: [activityColumns, ...activityRows],
-    "Vehicle Types": [vehicleColumns, ...vehicleRows],
-    "Heat Map": [
-      ["ชั้น", "ช่องจอด", "จำนวนครั้ง"],
-      ...heatSpots.map((spot) => [spot.floor, spot.name, spot.count]),
-    ],
-  };
-
   function handleChangePeriod(next: Period) {
     setPeriod(next);
     setError("");
-    if (next !== "custom") setDates(reportDates(next, now));
+    if (next !== "custom") setDates({ ...dates, ...reportDates(next, now) });
   }
 
   function handleChangeDate(key: "start" | "end", value: string) {
@@ -192,15 +217,36 @@ export default function Page() {
       setError("กรุณาเลือกวันที่เริ่มและวันที่สิ้นสุดให้ถูกต้อง");
       return;
     }
+    if (!dates.startTime || !dates.endTime || dates.startTime > dates.endTime) {
+      setError("กรุณาเลือกเวลาเริ่มและเวลาสิ้นสุดให้ถูกต้อง");
+      return;
+    }
     setError("");
     setAppliedDates(dates);
     setAppliedFloor(floor);
     setSelectedSpotId("");
   }
 
-  function handleExportCsv() {
-    const tabName = tab.toLowerCase().replaceAll(" ", "-");
-    downloadCsv(`auto-parking-${tabName}-${appliedDates.start}-${appliedDates.end}.csv`, csvRows[tab]);
+  function openApprove(vehicle: Vehicle) {
+    setApproving(vehicle);
+    setReason("");
+    setApproveError("");
+  }
+
+  // อนุมัติรถที่จ่ายแล้วแต่เกินเวลาออก → ออกได้อีก 15 นาทีโดยไม่เก็บเงินเพิ่ม
+  function handleApprove(event: React.FormEvent) {
+    event.preventDefault();
+    if (!approving) return;
+    if (reason.trim().length < 5) return setApproveError("กรุณาระบุเหตุผลอย่างน้อย 5 ตัวอักษร");
+    const approval = { staffName: getCurrentUser(data)!.name, approvedAt: now, reason: reason.trim() };
+    setData({
+      ...data,
+      vehicles: data.vehicles.map((vehicle) =>
+        vehicle.id === approving.id ? { ...vehicle, approvals: [...vehicle.approvals, approval] } : vehicle,
+      ),
+    });
+    setNotice(`อนุมัติรถ ${approving.plate} ให้ออกได้อีก ${EXIT_MINUTES} นาที โดยไม่เก็บเงินเพิ่ม`);
+    setApproving(null);
   }
 
   return (
@@ -210,11 +256,6 @@ export default function Page() {
           <h1>{TAB_TITLES[tab][0]}</h1>
           <p>{TAB_TITLES[tab][1]}</p>
         </div>
-        {can("export-reports") && (
-          <button className="sp-button sp-button--secondary" onClick={handleExportCsv}>
-            <Download size={16} /> ส่งออก CSV
-          </button>
-        )}
       </header>
 
       <div className="reports-tabs" role="group" aria-label="ประเภทรายงาน">
@@ -249,6 +290,22 @@ export default function Page() {
             type="date"
             value={dates.end}
             onChange={(event) => handleChangeDate("end", event.target.value)}
+          />
+        </label>
+        <label>
+          เวลาเริ่ม
+          <input
+            type="time"
+            value={dates.startTime}
+            onChange={(event) => setDates({ ...dates, startTime: event.target.value })}
+          />
+        </label>
+        <label>
+          เวลาสิ้นสุด
+          <input
+            type="time"
+            value={dates.endTime}
+            onChange={(event) => setDates({ ...dates, endTime: event.target.value })}
           />
         </label>
         {tab === "Heat Map" && (
@@ -307,6 +364,17 @@ export default function Page() {
             heading="รายละเอียดช่วงหนาแน่น"
             columns={activityColumns}
             rows={activityRows}
+            empty="ยังไม่มีรถเข้า–ออกในช่วงเวลานี้"
+          />
+          {notice && (
+            <p className="reports-notice" role="status">
+              {notice}
+            </p>
+          )}
+          <ReportTable
+            heading={`รายการรถเข้า–ออก (${report.visits.length} คัน)`}
+            columns={visitColumns}
+            rows={visitRows}
             empty="ยังไม่มีรถเข้า–ออกในช่วงเวลานี้"
           />
         </>
@@ -382,6 +450,34 @@ export default function Page() {
           </section>
         </div>
       )}
+
+      {/* ป๊อปอัป: อนุมัติรถที่จ่ายแล้วแต่เกินเวลาออก */}
+      <Modal open={approving !== null} title="อนุมัติออกเกินเวลา" onClose={() => setApproving(null)}>
+        {approving && (
+          <form className="modal-form" onSubmit={handleApprove} noValidate>
+            <p>
+              อนุมัติรถ {approving.plate} ให้ออกได้อีก {EXIT_MINUTES} นาที โดยไม่เก็บเงินเพิ่ม
+            </p>
+            <label className="sp-field">
+              เหตุผล
+              <textarea rows={3} value={reason} onChange={(event) => setReason(event.target.value)} />
+            </label>
+            {approveError && (
+              <p className="form-error" role="alert">
+                {approveError}
+              </p>
+            )}
+            <div className="modal-actions">
+              <button type="button" className="sp-button sp-button--secondary" onClick={() => setApproving(null)}>
+                ยกเลิก
+              </button>
+              <button type="submit" className="sp-button sp-button--primary">
+                ยืนยันอนุมัติ
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }

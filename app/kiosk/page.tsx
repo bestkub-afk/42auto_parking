@@ -179,7 +179,7 @@ export default function Page() {
               </p>
             )}
             {status.code === "overdue" && (
-              <Link href={`/admin/operations?vehicle=${vehicle.id}`} className="text-button">
+              <Link href={`/admin/reports?vehicle=${vehicle.id}`} className="text-button">
                 สำหรับเจ้าหน้าที่: ตรวจสอบและอนุมัติออก →
               </Link>
             )}

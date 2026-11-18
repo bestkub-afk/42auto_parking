@@ -239,10 +239,10 @@ export default function Page() {
                 </div>
               </dl>
               <div className="spot-detail-actions">
-                {parkedCar && canDo(data, "operations") && (
+                {parkedCar && canDo(data, "reports") && (
                   <Link
                     className="sp-button sp-button--primary"
-                    href={`/admin/operations?vehicle=${parkedCar.id}`}
+                    href={`/admin/reports?vehicle=${parkedCar.id}`}
                   >
                     ดูข้อมูลรถ
                   </Link>
