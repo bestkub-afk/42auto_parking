@@ -8,6 +8,7 @@ export type Role = "Super Admin" | "Admin";
 
 // เมนูของ Admin
 export type Menu = "dashboard" | "parking-layout" | "pricing" | "reports" | "permissions";
+export type Menu = "dashboard" | "parking-layout" | "reports" | "permissions";
 
 // สิทธิ์ = เมนู + การกระทำในเมนู
 export type Permission =
@@ -18,6 +19,7 @@ export type Permission =
   | "manage-floors"
   | "edit-rate"
   | "export-reports"
+  | "approve-exit"
   | "edit-users"
   | "edit-roles"
   | "reset";

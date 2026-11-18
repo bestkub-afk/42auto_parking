@@ -227,6 +227,14 @@ export default function Page() {
                 </div>
               </dl>
               <div className="spot-detail-actions">
+                {parkedCar && canDo(data, "reports") && (
+                  <Link
+                    className="sp-button sp-button--primary"
+                    href={`/admin/reports?vehicle=${parkedCar.id}`}
+                  >
+                    ดูข้อมูลรถ
+                  </Link>
+                )}
                 {canDo(data, "edit-spots") && (
                   <button
                     className="sp-button sp-button--secondary"

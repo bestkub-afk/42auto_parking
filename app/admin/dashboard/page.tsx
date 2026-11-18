@@ -27,12 +27,14 @@ export default function Page() {
   );
   const report = createReport({ ...data, vehicles, payments }, { start: date, end: date });
 
-  // สถานะช่อง = ข้อมูลตอนนี้ (ไม่ขึ้นกับวันที่ที่เลือก)
-  const spots = countSpots(data, floor === "all" ? undefined : Number(floor));
+  // สถานะช่อง ณ วันที่เลือก: วันนี้ของเดโม = เวลาปัจจุบัน / วันอื่น = สิ้นวัน (เวลาไทย +07:00)
+  const isToday = date === dateKey(now);
+  const asOf = isToday ? now : new Date(`${date}T23:59:59+07:00`).toISOString();
+  const spots = countSpots(data, floor === "all" ? undefined : Number(floor), asOf);
 
   const stats = [
     { label: "ช่องจอดทั้งหมด", value: `${spots.total} ช่อง`, note: `${data.floors.length} ชั้นใน${BUILDING}` },
-    { label: "ช่องพร้อมใช้", value: `${spots.available} ช่อง`, note: "ว่างขณะนี้" },
+    { label: "ช่องพร้อมใช้", value: `${spots.available} ช่อง`, note: isToday ? "ว่างขณะนี้" : "ว่าง ณ สิ้นวันที่เลือก" },
     {
       label: "ช่องไม่ว่าง",
       value: `${spots.total - spots.available} ช่อง`,
@@ -73,7 +75,7 @@ export default function Page() {
           </select>
         </div>
       </AdminHeader>
-      <p className="section-description">สถานะช่องจอดเป็นข้อมูลปัจจุบัน · วันที่ที่เลือกใช้กับรายรับและกราฟ</p>
+      <p className="section-description">ทุกการ์ดอ้างอิงวันที่ที่เลือก · วันนี้ใช้เวลาปัจจุบัน วันอื่นนับ ณ สิ้นวัน</p>
 
       <StatCards items={stats} />
 
@@ -131,7 +133,7 @@ export default function Page() {
           {data.floors
             .filter((item) => inFloor(item.id))
             .map((item) => {
-              const count = countSpots(data, item.id);
+              const count = countSpots(data, item.id, asOf);
               return (
                 <div className="floor-bar" key={item.id}>
                   <div>
@@ -148,7 +150,7 @@ export default function Page() {
       <section className="admin-card latest-vehicles">
         <div className="card-heading">
           <h2>รายการรถล่าสุด</h2>
-          {canDo(data, "operations") && <Link href="/admin/operations">ดูรายการทั้งหมด →</Link>}
+          {canDo(data, "reports") && <Link href="/admin/reports?tab=Activity">ดูรายการทั้งหมด →</Link>}
         </div>
         <div className="admin-table-wrap">
           <table className="admin-table">

@@ -12,6 +12,9 @@ const SPOTS_PER_ROW = 10;
 // 7 → "07"
 const pad = (value: number) => String(value).padStart(2, "0");
 
+// "วันนี้" ของเดโม (ต้องตรงกับวันของ DEMO_START ใน config.ts)
+const TODAY = "2025-10-26";
+
 // รถที่ยังจอดอยู่วันนี้ [ทะเบียน, จังหวัด, ประเภท, ช่อง, เวลาเข้า, รูป]
 const PARKED: [string, string, Vehicle["type"], string, string, string][] = [
   ["กก 1234", "กรุงเทพมหานคร", "Sedan", "f1-A3", "09:24", DEFAULT_CAR_IMAGE],
@@ -52,7 +55,7 @@ const createVehicles = (spots: Spot[]) => {
     province,
     type,
     spotId,
-    entryAt: `2025-10-14T${time}:00+07:00`,
+    entryAt: `${TODAY}T${time}:00+07:00`,
     exitAt: null,
     image,
     approvals: [],
@@ -66,8 +69,8 @@ const createVehicles = (spots: Spot[]) => {
       province: DEFAULT_PROVINCE,
       type: "SUV",
       spotId: "f1-A7",
-      entryAt: "2025-10-14T08:52:00+07:00",
-      exitAt: "2025-10-14T12:20:00+07:00",
+      entryAt: `${TODAY}T08:52:00+07:00`,
+      exitAt: `${TODAY}T12:20:00+07:00`,
       image: DEFAULT_CAR_IMAGE,
       approvals: [],
     },
@@ -77,8 +80,8 @@ const createVehicles = (spots: Spot[]) => {
       province: "ปทุมธานี",
       type: "Sedan",
       spotId: "f1-B10",
-      entryAt: "2025-10-14T11:03:00+07:00",
-      exitAt: "2025-10-14T11:57:00+07:00",
+      entryAt: `${TODAY}T11:03:00+07:00`,
+      exitAt: `${TODAY}T11:57:00+07:00`,
       image: DEFAULT_CAR_IMAGE,
       approvals: [],
     },
@@ -86,7 +89,8 @@ const createVehicles = (spots: Spot[]) => {
 
   // ประวัติย้อนหลัง ม.ค.–ต.ค. ไว้ใช้ในหน้า Reports
   for (let month = 1; month <= 10; month++) {
-    const days = month === 10 ? [2, 5, 8, 11, 13] : [3, 8, 14, 20, 26];
+    // ตุลาคม: มีข้อมูลต่อเนื่อง 7 วัน 20–26 (วันที่ 26 คือวันนี้ของเดโม)
+    const days = month === 10 ? [2, 5, 8, 11, 14, 20, 21, 22, 23, 24, 25] : [3, 8, 14, 20, 26];
     days.forEach((day, dayIndex) => {
       for (let count = 0; count < 2 + (month % 3); count++) {
         const date = `2025-${pad(month)}-${pad(day)}`;
@@ -94,7 +98,8 @@ const createVehicles = (spots: Spot[]) => {
         const outHour = inHour + 1 + ((dayIndex + month) % 4);
         vehicles.push({
           id: `h-${month}-${day}-${count}`,
-          plate: `ทด ${month}${day}${count}`,
+          // เลขทะเบียน 4 หลัก (1000–2347) ไม่ซ้ำกัน: คำนวณจากเดือน วัน และลำดับรถในวันนั้น
+          plate: `ทด ${1000 + (month * 31 + day) * 4 + count}`,
           province: DEFAULT_PROVINCE,
           type: VEHICLE_TYPES[(dayIndex + count) % VEHICLE_TYPES.length],
           spotId: spots[(day + dayIndex * 7 + count * 13) % spots.length].id,
@@ -106,6 +111,7 @@ const createVehicles = (spots: Spot[]) => {
       }
     });
   }
+
   return vehicles;
 };
 

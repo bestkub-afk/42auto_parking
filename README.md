@@ -19,7 +19,7 @@ npm run dev      # เปิด http://localhost:3000
 | `/user/search` | ค้นทะเบียน (ลอง `กก 1234` จะเจอ 2 คัน) |
 | `/user/vehicle/[id]` → `/user/summary/[id]` → `/user/payment/[id]` → `/user/success/[id]` | รายละเอียด → สรุป → QR → ผลชำระ |
 | `/login` | เข้าสู่ระบบผู้ดูแล |
-| `/admin/dashboard` `parking-layout` `floors` `operations` `reports` `permissions` | Admin |
+| `/admin/dashboard` `parking-layout` `floors` `reports` `permissions` | Admin |
 | `/kiosk?vehicle=v1` | จอทางออก |
 
 ## โครงสร้าง (เหมือน W09)

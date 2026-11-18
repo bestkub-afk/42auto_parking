@@ -2,10 +2,11 @@ import type { ParkingData } from "@/data/types";
 import { PAYMENT_METHODS, VEHICLE_TYPES } from "@/data/config";
 import { dateKey, time } from "./format";
 
-// รวมตัวเลขให้ Dashboard และ Reports (กราฟ ตาราง CSV ใช้ชุดเดียวกัน)
+// รวมตัวเลขให้ Dashboard และ Reports (กราฟ ตาราง ใช้ชุดเดียวกัน)
 
 export type ReportPeriod = "day" | "month" | "year";
-export type ReportDates = { start: string; end: string };
+// startTime / endTime = ช่วงเวลาในแต่ละวัน เช่น 08:00–12:00 (ไม่ใส่ = ทั้งวัน)
+export type ReportDates = { start: string; end: string; startTime?: string; endTime?: string };
 
 // สีกราฟ: ม่วง เขียว เหลือง
 export const REPORT_COLORS = ["#5441a6", "#19857e", "#d5a73e"];
@@ -48,8 +49,10 @@ function monthNumber(day: string) {
 }
 
 export function createReport(data: ParkingData, dates: ReportDates) {
-  const { start, end } = dates;
-  const isInRange = (value: string) => dateKey(value) >= start && dateKey(value) <= end;
+  const { start, end, startTime = "00:00", endTime = "23:59" } = dates;
+  // อยู่ในช่วงวันที่ และอยู่ในช่วงเวลาของวันที่เลือก
+  const isInRange = (value: string) =>
+    dateKey(value) >= start && dateKey(value) <= end && time(value) >= startTime && time(value) <= endTime;
 
   // 1) เลือกข้อมูลที่อยู่ในช่วงวันที่
   const payments = data.payments.filter((payment) => isInRange(payment.paidAt));
@@ -58,6 +61,10 @@ export function createReport(data: ParkingData, dates: ReportDates) {
   for (const vehicle of data.vehicles) {
     if (vehicle.exitAt && isInRange(vehicle.exitAt)) exitTimes.push(vehicle.exitAt);
   }
+  // รถทีละคันที่เข้าหรือออกในช่วงที่เลือก เรียงจากเข้าล่าสุด
+  const visits = data.vehicles
+    .filter((vehicle) => isInRange(vehicle.entryAt) || (vehicle.exitAt !== null && isInRange(vehicle.exitAt)))
+    .sort((a, b) => Date.parse(b.entryAt) - Date.parse(a.entryAt));
 
   // 2) เลือกว่าแกน X แบ่งเป็นช่วงชั่วโมง / รายวัน / รายเดือน
   const dayCount = Math.round((Date.parse(end) - Date.parse(start)) / ONE_DAY) + 1;
@@ -128,6 +135,7 @@ export function createReport(data: ParkingData, dates: ReportDates) {
     types,
     payments,
     spotUsage,
+    visits,
     total: payments.reduce((sum, payment) => sum + payment.amount, 0),
     vehicleCount: vehicles.length,
     exitCount: exitTimes.length,

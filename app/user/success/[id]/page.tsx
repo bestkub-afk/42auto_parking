@@ -30,7 +30,7 @@ export default function Page() {
 
   return (
     <>
-      <UserHeader title="รายละเอียดรถ" backTo={`/user/vehicle/${vehicle.id}`} />
+      <UserHeader title="ใบเสร็จ"/>
       <main className="user-page-content">
         <div className="done-box">
           <CircleCheck size={56} strokeWidth={1.5} />

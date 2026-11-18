@@ -28,12 +28,14 @@ export default function Page() {
       <main className="user-page-content">
         <img className="detail-photo" src={vehicle.image} alt={`รถ ${vehicle.plate}`} />
 
+
+        {/* //แสดงรายละเอียดรถ + เวลาออก + ค่าจอด */}
         <section className="detail-card">
           <VehicleCard vehicle={vehicle} />
           <VehicleFacts 
-          vehicle={vehicle} 
-          endAt={endAt} 
-          fullDate/>
+          vehicle={vehicle}  //แสดงรายละเอียดรถ
+          endAt={endAt} //ใช้เวลาที่จ่ายแล้วหรือเวลาปัจจุบัน
+          fullDate/> 
         </section>
 
         <div className="fee-total">

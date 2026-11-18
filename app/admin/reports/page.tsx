@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Download } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import type { Vehicle } from "@/data/types";
+import { EXIT_MINUTES } from "@/data/config";
 import { useGlobalData } from "@/utils/context";
 import { createReport, reportDates } from "@/utils/reports";
 import type { ReportPeriod } from "@/utils/reports";
-import { dateTime, money } from "@/utils/format";
-import { floorName } from "@/utils/parking";
-import { canDo } from "@/utils/login";
-import { downloadCsv } from "@/utils/csv";
+import { dateKey, dateTime, money } from "@/utils/format";
+import { findPayment, floorName, parkingDuration, parkingStatus, spotText, vehicleTotal } from "@/utils/parking";
+import { canDo, getCurrentUser } from "@/utils/login";
 import { DonutChart, RevenueChart, TrafficChart } from "@/components/ReportCharts";
+import StatusBadge, { ParkingBadge } from "@/components/StatusBadge";
+import Modal from "@/components/Modal";
 
 type Tab = "Finance" | "Activity" | "Vehicle Types" | "Heat Map";
 type Period = ReportPeriod | "custom";
@@ -18,7 +21,7 @@ type Period = ReportPeriod | "custom";
 const TABS: Tab[] = ["Finance", "Activity", "Vehicle Types", "Heat Map"];
 const TAB_TITLES: Record<Tab, [string, string]> = {
   Finance: ["รายงานรายรับ", "ดูยอดรับชำระและรายการชำระเงินในช่วงที่เลือก"],
-  Activity: ["รายงานรถเข้า–ออก", "เปรียบเทียบจำนวนรถเข้า–ออกและดูช่วงเวลาที่หนาแน่น"],
+  Activity: ["รายงานรถเข้า–ออก", "เปรียบเทียบจำนวนรถเข้า–ออก ดูช่วงเวลาที่หนาแน่น และรายการรถทุกคัน"],
   "Vehicle Types": ["รายงานประเภทรถ", "ดูจำนวนและสัดส่วนของรถแต่ละประเภท"],
   "Heat Map": ["ความถี่การใช้ช่องจอด", "ดูว่าช่องจอดแต่ละช่องถูกใช้กี่ครั้งในช่วงที่เลือก"],
 };
@@ -35,7 +38,7 @@ function ReportTable({
 }: {
   heading: string;
   columns: string[];
-  rows: (string | number)[][];
+  rows: React.ReactNode[][];
   empty: string;
 }) {
   return (
@@ -72,30 +75,41 @@ function ReportTable({
   );
 }
 
-// หน้ารายงาน 4 แท็บ: ตัวกรองมีผลเมื่อกด "แสดงรายงาน" (กราฟ ตาราง CSV ใช้ชุดเดียวกัน)
+// หน้ารายงาน 4 แท็บ: ตัวกรองมีผลเมื่อกด "แสดงรายงาน" (กราฟ ตาราง ใช้ชุดเดียวกัน)
 export default function Page() {
-  const { data, now } = useGlobalData();
-  const can = (permission: "export-reports" | "parking-layout") => canDo(data, permission);
-  const [tab, setTab] = useState<Tab>("Finance");
-  const [period, setPeriod] = useState<Period>("month");
-  const [dates, setDates] = useState(() => reportDates("month", now)); // ค่าที่กำลังเลือก
+  const { data, setData, now } = useGlobalData();
+  const can = (permission: "parking-layout" | "approve-exit") => canDo(data, permission);
+  // มาจาก Kiosk / Parking Layout (?vehicle=) → เปิดแท็บ Activity ตั้งแต่วันที่รถคันนั้นเข้า
+  const params = useSearchParams();
+  const linked = data.vehicles.find((vehicle) => vehicle.id === params.get("vehicle"));
+  const [tab, setTab] = useState<Tab>(linked || params.get("tab") === "Activity" ? "Activity" : "Finance");
+  const [period, setPeriod] = useState<Period>(linked ? "custom" : "month");
+  const [dates, setDates] = useState(() => ({
+    ...(linked ? { start: dateKey(linked.entryAt), end: dateKey(now) } : reportDates("month", now)),
+    startTime: "00:00",
+    endTime: "23:59",
+  })); // ค่าที่กำลังเลือก
   const [appliedDates, setAppliedDates] = useState(dates); // ค่าที่กดแสดงรายงานแล้ว
   const [floor, setFloor] = useState(data.floors[0]?.id ?? 1);
   const [appliedFloor, setAppliedFloor] = useState(floor);
   const [selectedSpotId, setSelectedSpotId] = useState("");
   const [error, setError] = useState("");
+  const [approving, setApproving] = useState<Vehicle | null>(null); // รถที่กำลังอนุมัติออก
+  const [reason, setReason] = useState("");
+  const [approveError, setApproveError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [selectedVehicleId, setSelectedVehicleId] = useState(linked?.id ?? ""); // รถที่เปิดดูรายละเอียด
 
   const report = createReport(data, appliedDates);
 
   // ---------- Finance ----------
-  const financeColumns = ["วัน–เวลาชำระ", "รหัสอ้างอิง", "ทะเบียนรถ", "วิธีชำระ", "ยอดชำระ (บาท)", "สถานะ"];
+  const financeColumns = ["วัน–เวลาชำระ", "รหัสอ้างอิง", "ทะเบียนรถ", "ยอดชำระ (บาท)", "สถานะ"];
   const financeRows = [...report.payments]
     .sort((a, b) => Date.parse(b.paidAt) - Date.parse(a.paidAt))
     .map((payment) => [
       dateTime(payment.paidAt),
       payment.id,
       data.vehicles.find((vehicle) => vehicle.id === payment.vehicleId)?.plate ?? "—",
-      payment.method,
       payment.amount,
       "สำเร็จ",
     ]);
@@ -114,6 +128,28 @@ export default function Page() {
     point.exits,
     point.entries + point.exits,
   ]);
+
+  // ---------- Activity: รายการรถเข้า–ออกทีละคัน กด "ดู" เพื่อดูรายละเอียดรถ ----------
+  const visitColumns = ["ทะเบียนรถ", "ประเภท", "เวลาเข้า", "เวลาออก", "ระยะเวลา", "สถานะ", "รายละเอียด"];
+  const visitRows = report.visits.map((vehicle) => {
+    const status = parkingStatus(vehicle, findPayment(data, vehicle.id), now);
+    return [
+      `${vehicle.plate} ${vehicle.province}`,
+      vehicle.type,
+      dateTime(vehicle.entryAt),
+      vehicle.exitAt ? dateTime(vehicle.exitAt) : "ยังจอดอยู่",
+      parkingDuration(vehicle, now),
+      <ParkingBadge key="status" status={status} />,
+      <button key="detail" type="button" className="text-button" onClick={() => showDetail(vehicle.id)}>
+        ดู
+      </button>,
+    ];
+  });
+
+  // รายละเอียดรถที่เลือก (ภาพเข้า–ออก ค่าจอด การชำระ ประวัติอนุมัติ)
+  const selected = data.vehicles.find((vehicle) => vehicle.id === selectedVehicleId);
+  const selectedPayment = findPayment(data, selected?.id);
+  const selectedStatus = selected ? parkingStatus(selected, selectedPayment, now) : null;
 
   // ---------- Vehicle Types ----------
   const vehicleColumns = ["ประเภทรถ", "จำนวน (คัน)", "สัดส่วน"];
@@ -164,21 +200,10 @@ export default function Page() {
     ],
   };
 
-  // ข้อมูลที่ส่งออกเป็น CSV ตามแท็บที่เปิดอยู่
-  const csvRows = {
-    Finance: [financeColumns, ...financeRows],
-    Activity: [activityColumns, ...activityRows],
-    "Vehicle Types": [vehicleColumns, ...vehicleRows],
-    "Heat Map": [
-      ["ชั้น", "ช่องจอด", "จำนวนครั้ง"],
-      ...heatSpots.map((spot) => [spot.floor, spot.name, spot.count]),
-    ],
-  };
-
   function handleChangePeriod(next: Period) {
     setPeriod(next);
     setError("");
-    if (next !== "custom") setDates(reportDates(next, now));
+    if (next !== "custom") setDates({ ...dates, ...reportDates(next, now) });
   }
 
   function handleChangeDate(key: "start" | "end", value: string) {
@@ -192,15 +217,42 @@ export default function Page() {
       setError("กรุณาเลือกวันที่เริ่มและวันที่สิ้นสุดให้ถูกต้อง");
       return;
     }
+    if (!dates.startTime || !dates.endTime || dates.startTime > dates.endTime) {
+      setError("กรุณาเลือกเวลาเริ่มและเวลาสิ้นสุดให้ถูกต้อง");
+      return;
+    }
     setError("");
     setAppliedDates(dates);
     setAppliedFloor(floor);
     setSelectedSpotId("");
   }
 
-  function handleExportCsv() {
-    const tabName = tab.toLowerCase().replaceAll(" ", "-");
-    downloadCsv(`auto-parking-${tabName}-${appliedDates.start}-${appliedDates.end}.csv`, csvRows[tab]);
+  function showDetail(vehicleId: string) {
+    setSelectedVehicleId(vehicleId);
+    // เลื่อนลงไปที่กล่องรายละเอียด
+    setTimeout(() => document.getElementById("vehicle-detail")?.scrollIntoView({ behavior: "smooth" }), 0);
+  }
+
+  function openApprove(vehicle: Vehicle) {
+    setApproving(vehicle);
+    setReason("");
+    setApproveError("");
+  }
+
+  // อนุมัติรถที่จ่ายแล้วแต่เกินเวลาออก → ออกได้อีก 15 นาทีโดยไม่เก็บเงินเพิ่ม
+  function handleApprove(event: React.FormEvent) {
+    event.preventDefault();
+    if (!approving) return;
+    if (reason.trim().length < 5) return setApproveError("กรุณาระบุเหตุผลอย่างน้อย 5 ตัวอักษร");
+    const approval = { staffName: getCurrentUser(data)!.name, approvedAt: now, reason: reason.trim() };
+    setData({
+      ...data,
+      vehicles: data.vehicles.map((vehicle) =>
+        vehicle.id === approving.id ? { ...vehicle, approvals: [...vehicle.approvals, approval] } : vehicle,
+      ),
+    });
+    setNotice(`อนุมัติรถ ${approving.plate} ให้ออกได้อีก ${EXIT_MINUTES} นาที โดยไม่เก็บเงินเพิ่ม`);
+    setApproving(null);
   }
 
   return (
@@ -210,11 +262,6 @@ export default function Page() {
           <h1>{TAB_TITLES[tab][0]}</h1>
           <p>{TAB_TITLES[tab][1]}</p>
         </div>
-        {can("export-reports") && (
-          <button className="sp-button sp-button--secondary" onClick={handleExportCsv}>
-            <Download size={16} /> ส่งออก CSV
-          </button>
-        )}
       </header>
 
       <div className="reports-tabs" role="group" aria-label="ประเภทรายงาน">
@@ -249,6 +296,22 @@ export default function Page() {
             type="date"
             value={dates.end}
             onChange={(event) => handleChangeDate("end", event.target.value)}
+          />
+        </label>
+        <label>
+          เวลาเริ่ม
+          <input
+            type="time"
+            value={dates.startTime}
+            onChange={(event) => setDates({ ...dates, startTime: event.target.value })}
+          />
+        </label>
+        <label>
+          เวลาสิ้นสุด
+          <input
+            type="time"
+            value={dates.endTime}
+            onChange={(event) => setDates({ ...dates, endTime: event.target.value })}
           />
         </label>
         {tab === "Heat Map" && (
@@ -309,6 +372,78 @@ export default function Page() {
             rows={activityRows}
             empty="ยังไม่มีรถเข้า–ออกในช่วงเวลานี้"
           />
+          {notice && (
+            <p className="reports-notice" role="status">
+              {notice}
+            </p>
+          )}
+          <ReportTable
+            heading={`รายการรถเข้า–ออก (${report.visits.length} คัน)`}
+            columns={visitColumns}
+            rows={visitRows}
+            empty="ยังไม่มีรถเข้า–ออกในช่วงเวลานี้"
+          />
+
+          {selected && selectedStatus && (
+            <section className="reports-card operation-details" id="vehicle-detail">
+              <div className="card-heading">
+                <h2>รายละเอียดรถ {selected.plate}</h2>
+                <span>
+                  {selected.province} · {spotText(data, selected)}
+                </span>
+                <div className="heading-actions">
+                  <StatusBadge tone={selectedPayment ? "green" : "red"}>
+                    {selectedPayment ? "ชำระแล้ว" : "ยังไม่ชำระ"}
+                  </StatusBadge>
+                  <ParkingBadge status={selectedStatus} />
+                  {selectedStatus.code === "overdue" && can("approve-exit") && (
+                    <button type="button" className="sp-button sp-button--primary" onClick={() => openApprove(selected)}>
+                      อนุมัติออกเกินเวลา
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* รูปขาเข้า–ขาออก พร้อมเวลา */}
+              <div className="operation-photos">
+                <div>
+                  <div>
+                    <strong>ภาพขาเข้า</strong>
+                    <span>{dateTime(selected.entryAt)}</span>
+                  </div>
+                  <img src={selected.image} alt={`ภาพขาเข้า ${selected.plate}`} />
+                </div>
+                <div>
+                  <div>
+                    <strong>ภาพขาออก</strong>
+                    <span>{selected.exitAt ? dateTime(selected.exitAt) : "—"}</span>
+                  </div>
+                  {selected.exitAt ? (
+                    <img src={selected.image} alt={`ภาพขาออก ${selected.plate}`} />
+                  ) : (
+                    <div className="camera-empty">รถยังจอดอยู่ · ยังไม่มีภาพขาออก</div>
+                  )}
+                </div>
+              </div>
+
+              <p className="section-description">
+                ระยะเวลาจอด {parkingDuration(selected, now)} · ค่าจอด{" "}
+                {money(vehicleTotal(selected, selectedPayment, now))}
+                {selectedPayment && ` · ชำระเมื่อ ${dateTime(selectedPayment.paidAt)}`}
+              </p>
+
+              {selected.approvals.length > 0 && (
+                <div className="approval-history">
+                  <h3>ประวัติอนุมัติออกเกินเวลา</h3>
+                  {selected.approvals.map((approval) => (
+                    <p key={approval.approvedAt}>
+                      {dateTime(approval.approvedAt)} · {approval.staffName} · {approval.reason}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </>
       )}
 
@@ -382,6 +517,34 @@ export default function Page() {
           </section>
         </div>
       )}
+
+      {/* ป๊อปอัป: อนุมัติรถที่จ่ายแล้วแต่เกินเวลาออก */}
+      <Modal open={approving !== null} title="อนุมัติออกเกินเวลา" onClose={() => setApproving(null)}>
+        {approving && (
+          <form className="modal-form" onSubmit={handleApprove} noValidate>
+            <p>
+              อนุมัติรถ {approving.plate} ให้ออกได้อีก {EXIT_MINUTES} นาที โดยไม่เก็บเงินเพิ่ม
+            </p>
+            <label className="sp-field">
+              เหตุผล
+              <textarea rows={3} value={reason} onChange={(event) => setReason(event.target.value)} />
+            </label>
+            {approveError && (
+              <p className="form-error" role="alert">
+                {approveError}
+              </p>
+            )}
+            <div className="modal-actions">
+              <button type="button" className="sp-button sp-button--secondary" onClick={() => setApproving(null)}>
+                ยกเลิก
+              </button>
+              <button type="submit" className="sp-button sp-button--primary">
+                ยืนยันอนุมัติ
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }
