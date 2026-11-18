@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { CircleCheck, Clock3, ChevronRight } from "lucide-react";
 import { useGlobalData } from "@/utils/context";
-import { BANK_APPS, HOURLY_RATE, QR_MINUTES } from "@/data/config";
+import { BANK_APPS, HOURLY_RATE, } from "@/data/config";
 import { countdown, money } from "@/utils/format";
 import { findPayment, payVehicle, vehicleTotal } from "@/utils/parking";
 import { downloadBlob } from "@/utils/csv";
@@ -12,16 +12,17 @@ import { DemoQr } from "@/components/DemoQr";
 import UserHeader from "@/components/UserHeader";
 import VehicleNotFound from "@/components/VehicleNotFound";
 
-const QR_TIME = QR_MINUTES * 60 * 1000;
+// const QR_TIME = QR_MINUTES * 60 * 1000;
 
 // อ่านเวลาหมดอายุ QR ที่เก็บไว้ (รีเฟรชแล้วไม่เริ่มนับใหม่) ถ้าไม่มีสร้างใหม่
 const loadQrDeadline = (key: string) => {
   const saved = Number(localStorage.getItem(key));
   if (saved > 0) return saved;
-  const deadline = Date.now() + QR_TIME;
+  const deadline = Date.now() ;
   localStorage.setItem(key, String(deadline));
   return deadline;
 };
+// + QR_TIME
 
 // หน้า QR: กดไอคอนแอปธนาคาร = จ่ายจำลอง → สถานะเปลี่ยนเป็นสำเร็จ → กดยืนยัน
 export default function Page() {
@@ -33,16 +34,17 @@ export default function Page() {
   const qrKey = `qr-deadline-${id}`;
 
   const [deadline, setDeadline] = useState(() => loadQrDeadline(qrKey));
-  const [secondsLeft, setSecondsLeft] = useState(QR_MINUTES * 60);
+  const [secondsLeft, setSecondsLeft] = useState();
   const [error, setError] = useState("");
+// QR_MINUTES * 60
 
   // นับถอยหลังอายุ QR
-  useEffect(() => {
-    const tick = () => setSecondsLeft(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)));
-    tick();
-    const timer = setInterval(tick, 1000);
-    return () => clearInterval(timer);
-  }, [deadline]);
+  // useEffect(() => {
+  //   const tick = () => setSecondsLeft(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)));
+  //   tick();
+  //   const timer = setInterval(tick, 1000);
+  //   return () => clearInterval(timer);
+  // }, [deadline]);
 
   if (!vehicle) return <VehicleNotFound />;
 
@@ -64,11 +66,11 @@ export default function Page() {
     }
   };
 
-  const handleNewQr = () => {
-    const newDeadline = Date.now() + QR_TIME;
-    localStorage.setItem(qrKey, String(newDeadline));
-    setDeadline(newDeadline);
-  };
+  // const handleNewQr = () => {
+  //   const newDeadline = Date.now() + QR_TIME;
+  //   localStorage.setItem(qrKey, String(newDeadline));
+  //   setDeadline(newDeadline);
+  // };
 
   const handleSaveQr = () => {
     const svg = document.getElementById("payment-qr");
@@ -90,19 +92,10 @@ export default function Page() {
             <small>QR code</small>
             <DemoQr id="payment-qr" />
             <small>สแกน QR เพื่อชำระเงินผ่านแอปธนาคาร</small>
-            {!paid && (
-              <p className="qr-timer" role="timer">
-                <Clock3 size={16} />
-                {expired ? "QR หมดอายุแล้ว" : `หมดอายุใน ${countdown(secondsLeft)} นาที`}
-              </p>
-            )}
-            {expired && (
-              <button className="text-button" onClick={handleNewQr}>
-                สร้าง QR ใหม่
-              </button>
-            )}
+            <p className="qr-timer">
+              <Clock3 size={16} /> หมดอายุใน 10:00 นาที
+            </p>
           </div>
-
           {/* ยังไม่จ่าย: ไอคอนแอปธนาคาร + บันทึกรูป QR */}
           {!paid && (
             <>
@@ -114,7 +107,7 @@ export default function Page() {
                 ))}
               </div>
               <small className="bank-caption">เลือกแอปธนาคาร</small>
-              <button className="save-qr" onClick={handleSaveQr}>
+              <button className="save-qr">
                 บันทึกรูป QR
               </button>
             </>
@@ -148,3 +141,14 @@ export default function Page() {
     </>
   );
 }
+{/* {!paid && (
+              <p className="qr-timer" role="timer">
+                <Clock3 size={16} />
+                {expired ? "QR หมดอายุแล้ว" : `หมดอายุใน ${countdown(secondsLeft)} นาที`}
+              </p>
+            )}
+            {expired && (
+              <button className="text-button">
+                สร้าง QR ใหม่
+              </button>
+            )} */}
