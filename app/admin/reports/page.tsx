@@ -9,10 +9,10 @@ import { useGlobalData } from "@/utils/context";
 import { createReport, reportDates } from "@/utils/reports";
 import type { ReportPeriod } from "@/utils/reports";
 import { dateKey, dateTime, money } from "@/utils/format";
-import { findPayment, floorName, parkingDuration, parkingStatus, spotText } from "@/utils/parking";
+import { findPayment, floorName, parkingDuration, parkingStatus, spotText, vehicleTotal } from "@/utils/parking";
 import { canDo, getCurrentUser } from "@/utils/login";
 import { DonutChart, RevenueChart, TrafficChart } from "@/components/ReportCharts";
-import { ParkingBadge } from "@/components/StatusBadge";
+import StatusBadge, { ParkingBadge } from "@/components/StatusBadge";
 import Modal from "@/components/Modal";
 
 type Tab = "Finance" | "Activity" | "Vehicle Types" | "Heat Map";
@@ -98,6 +98,7 @@ export default function Page() {
   const [reason, setReason] = useState("");
   const [approveError, setApproveError] = useState("");
   const [notice, setNotice] = useState("");
+  const [selectedVehicleId, setSelectedVehicleId] = useState(linked?.id ?? ""); // รถที่เปิดดูรายละเอียด
 
   const report = createReport(data, appliedDates);
 
@@ -129,8 +130,8 @@ export default function Page() {
     point.entries + point.exits,
   ]);
 
-  // ---------- Activity: รายการรถเข้า–ออกทีละคัน + ปุ่มอนุมัติรถที่เกินเวลาออก ----------
-  const visitColumns = ["ทะเบียนรถ", "ประเภท", "ช่องจอด", "เวลาเข้า", "เวลาออก", "ระยะเวลา", "สถานะ", "อนุมัติ"];
+  // ---------- Activity: รายการรถเข้า–ออกทีละคัน กด "ดู" เพื่อดูรายละเอียดรถ ----------
+  const visitColumns = ["ทะเบียนรถ", "ประเภท", "ช่องจอด", "เวลาเข้า", "เวลาออก", "ระยะเวลา", "สถานะ", "รายละเอียด"];
   const visitRows = report.visits.map((vehicle) => {
     const status = parkingStatus(vehicle, findPayment(data, vehicle.id), now);
     return [
@@ -141,15 +142,16 @@ export default function Page() {
       vehicle.exitAt ? dateTime(vehicle.exitAt) : "ยังจอดอยู่",
       parkingDuration(vehicle, now),
       <ParkingBadge key="status" status={status} />,
-      status.code === "overdue" && can("approve-exit") ? (
-        <button key="approve" type="button" className="text-button" onClick={() => openApprove(vehicle)}>
-          อนุมัติออก
-        </button>
-      ) : (
-        "—"
-      ),
+      <button key="detail" type="button" className="text-button" onClick={() => showDetail(vehicle.id)}>
+        ดู
+      </button>,
     ];
   });
+
+  // รายละเอียดรถที่เลือก (ภาพเข้า–ออก ค่าจอด การชำระ ประวัติอนุมัติ)
+  const selected = data.vehicles.find((vehicle) => vehicle.id === selectedVehicleId);
+  const selectedPayment = findPayment(data, selected?.id);
+  const selectedStatus = selected ? parkingStatus(selected, selectedPayment, now) : null;
 
   // ---------- Vehicle Types ----------
   const vehicleColumns = ["ประเภทรถ", "จำนวน (คัน)", "สัดส่วน"];
@@ -225,6 +227,12 @@ export default function Page() {
     setAppliedDates(dates);
     setAppliedFloor(floor);
     setSelectedSpotId("");
+  }
+
+  function showDetail(vehicleId: string) {
+    setSelectedVehicleId(vehicleId);
+    // เลื่อนลงไปที่กล่องรายละเอียด
+    setTimeout(() => document.getElementById("vehicle-detail")?.scrollIntoView({ behavior: "smooth" }), 0);
   }
 
   function openApprove(vehicle: Vehicle) {
@@ -377,6 +385,67 @@ export default function Page() {
             rows={visitRows}
             empty="ยังไม่มีรถเข้า–ออกในช่วงเวลานี้"
           />
+
+          {selected && selectedStatus && (
+            <section className="reports-card operation-details" id="vehicle-detail">
+              <div className="card-heading">
+                <h2>รายละเอียดรถ {selected.plate}</h2>
+                <span>
+                  {selected.province} · {spotText(data, selected)}
+                </span>
+                <div className="heading-actions">
+                  <StatusBadge tone={selectedPayment ? "green" : "red"}>
+                    {selectedPayment ? "ชำระแล้ว" : "ยังไม่ชำระ"}
+                  </StatusBadge>
+                  <ParkingBadge status={selectedStatus} />
+                  {selectedStatus.code === "overdue" && can("approve-exit") && (
+                    <button type="button" className="sp-button sp-button--primary" onClick={() => openApprove(selected)}>
+                      อนุมัติออกเกินเวลา
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* รูปขาเข้า–ขาออก พร้อมเวลา */}
+              <div className="operation-photos">
+                <div>
+                  <div>
+                    <strong>ภาพขาเข้า</strong>
+                    <span>{dateTime(selected.entryAt)}</span>
+                  </div>
+                  <img src={selected.image} alt={`ภาพขาเข้า ${selected.plate}`} />
+                </div>
+                <div>
+                  <div>
+                    <strong>ภาพขาออก</strong>
+                    <span>{selected.exitAt ? dateTime(selected.exitAt) : "—"}</span>
+                  </div>
+                  {selected.exitAt ? (
+                    <img src={selected.image} alt={`ภาพขาออก ${selected.plate}`} />
+                  ) : (
+                    <div className="camera-empty">รถยังจอดอยู่ · ยังไม่มีภาพขาออก</div>
+                  )}
+                </div>
+              </div>
+
+              <p className="section-description">
+                ระยะเวลาจอด {parkingDuration(selected, now)} · ค่าจอด{" "}
+                {money(vehicleTotal(selected, selectedPayment, now))}
+                {selectedPayment && ` · ชำระเมื่อ ${dateTime(selectedPayment.paidAt)}`}
+              </p>
+
+              {selected.approvals.length > 0 && (
+                <div className="approval-history">
+                  <h3>ประวัติอนุมัติออกเกินเวลา</h3>
+                  {selected.approvals.map((approval) => (
+                    <p key={approval.approvedAt}>
+                      {dateTime(approval.approvedAt)} · {approval.staffName} · {approval.reason}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </>
       )}
 
