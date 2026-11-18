@@ -8,7 +8,7 @@ export const SITE_NAME = "ลานจอด" + BUILDING;
 
 export const HOURLY_RATE = 30; // บาทต่อชั่วโมง (เศษชั่วโมงปัดขึ้น)
 export const EXIT_MINUTES = 15; // หลังจ่ายต้องออกภายในกี่นาที
-export const QR_MINUTES = 10; // อายุ QR
+// export const QR_MINUTES = 1; // อายุ QR
 
 export const TIME_ZONE = "Asia/Bangkok";
 // นาฬิกาเดโมเริ่มที่เวลานี้ แล้วเดินตามเวลาจริง
