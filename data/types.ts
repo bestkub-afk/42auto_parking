@@ -7,6 +7,7 @@ export type PaymentMethod = "Thai QR" | "บัตรเครดิต";
 export type Role = "Super Admin" | "Admin";
 
 // เมนูของ Admin
+export type Menu = "dashboard" | "parking-layout" | "pricing" | "reports" | "permissions";
 export type Menu = "dashboard" | "parking-layout" | "reports" | "permissions";
 
 // สิทธิ์ = เมนู + การกระทำในเมนู
@@ -16,6 +17,8 @@ export type Permission =
   | "edit-spots"
   | "delete-spots"
   | "manage-floors"
+  | "edit-rate"
+  | "export-reports"
   | "approve-exit"
   | "edit-users"
   | "edit-roles"
@@ -79,6 +82,7 @@ export type ParkingData = {
   payments: Payment[];
   users: User[];
   adminPermissions: Permission[]; // สิทธิ์ของบทบาท Admin
+  hourlyRate: number; // อัตราค่าจอดต่อชั่วโมง (บาท) ปรับได้ที่หน้าปรับราคา
   clockStartedAt: number; // เวลาจริงตอนเริ่มเดโม ใช้เดินนาฬิกาเดโม
 };
 
